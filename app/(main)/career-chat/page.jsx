@@ -1,13 +1,19 @@
+import { getCareerChatPageData } from "@/actions/chat";
 import ChatbotUI from "@/components/chatbot/chatbot-ui";
 
-export default function CareerChatPage() {
-  return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">
-        AI Career Chatbot
-      </h1>
+export default async function CareerChatPage({ searchParams }) {
+  const data = await getCareerChatPageData(searchParams);
 
-      <ChatbotUI />
-    </div>
+  return (
+    <ChatbotUI
+      initialConversations={data.conversations}
+      initialConversation={data.selectedConversation}
+      initialMode={data.selectedMode}
+      draftContext={data.draftContext}
+      profileSummary={data.profileSummary}
+      trackerSummary={data.trackerSummary}
+      topSavedJobs={data.topSavedJobs}
+      latestAssessment={data.latestAssessment}
+    />
   );
 }

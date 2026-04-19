@@ -29,6 +29,7 @@ model User {
   resume        Resume?
   coverLetter   CoverLetter[]
   savedJobs     SavedJob[]
+  chatConversations ChatConversation[]
 }
 
 model Assessment {
@@ -101,6 +102,37 @@ model SavedJob {
 
   @@unique([userId, externalJobId])
   @@index([userId, status])
+}
+
+model ChatConversation {
+  id                  String        @id @default(cuid())
+  userId              String
+  user                User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title               String
+  mode                String
+  scopeType           String        @default("general")
+  relatedExternalJobId String?
+  relatedCompanyName  String?
+  metadata            Json?
+  lastMessageAt       DateTime      @default(now())
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+  messages            ChatMessage[]
+
+  @@index([userId, updatedAt(sort: Desc)])
+  @@index([userId, mode])
+}
+
+model ChatMessage {
+  id             String           @id @default(cuid())
+  conversationId String
+  conversation   ChatConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  role           String
+  content        String           @db.Text
+  actions        Json?
+  createdAt      DateTime         @default(now())
+
+  @@index([conversationId, createdAt])
 }
 
 // Combined Industry Trends and Salary Insights

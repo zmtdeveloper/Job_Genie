@@ -10,6 +10,7 @@ import {
   ExternalLink,
   FileText,
   MapPin,
+  MessageSquare,
   NotebookPen,
   Radar,
   Sparkles,
@@ -64,6 +65,45 @@ export default function JobsDetailPanel({
     () => splitDescription(job?.description || ""),
     [job?.description]
   );
+  const careerChatHref = useMemo(() => {
+    if (!job) {
+      return "/career-chat";
+    }
+
+    const params = new URLSearchParams();
+    const entries = {
+      mode: "job-strategist",
+      externalJobId: job.externalJobId,
+      provider: job.provider,
+      title: job.title,
+      companyName: job.company,
+      location: job.location,
+      locality: job.locality,
+      salary: job.salary,
+      jobType: job.jobType,
+      postedAt: job.postedAt,
+      description: job.description,
+      url: job.url,
+      applyUrl: job.applyUrl,
+      sourceUrl: job.sourceUrl,
+      keySkills: Array.isArray(job.keySkills) ? job.keySkills.join(", ") : "",
+      matchScore:
+        typeof job.matchScore === "number" ? String(job.matchScore) : "",
+      matchLevel: job.matchLevel,
+      status: job.status,
+      atsScore: typeof job.atsScore === "number" ? String(job.atsScore) : "",
+      atsSummary: job.atsSummary,
+      notes: job.notes,
+    };
+
+    Object.entries(entries).forEach(([key, value]) => {
+      if (value) {
+        params.set(key, value);
+      }
+    });
+
+    return `/career-chat?${params.toString()}`;
+  }, [job]);
 
   if (!job && isLoading) {
     return (
@@ -202,6 +242,13 @@ export default function JobsDetailPanel({
             <Link href={job.interviewHref}>
               <Sparkles className="h-4 w-4" />
               Prepare Interview
+            </Link>
+          </Button>
+
+          <Button asChild variant="outline" className="h-10">
+            <Link href={careerChatHref}>
+              <MessageSquare className="h-4 w-4" />
+              Ask AI About This Role
             </Link>
           </Button>
         </div>
