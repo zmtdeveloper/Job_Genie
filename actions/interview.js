@@ -4,7 +4,11 @@ import { db } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import { generateJson, generateText } from "@/lib/gemini";
 
-export async function generateQuiz() {
+function cleanString(value) {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+export async function generateQuiz(jobContext = null) {
   const { userId } = await auth();
   if (!userId) throw new Error("Unauthorized");
 
@@ -18,12 +22,34 @@ export async function generateQuiz() {
 
   if (!user) throw new Error("User not found");
 
+  const normalizedJobContext = {
+    jobTitle: cleanString(jobContext?.jobTitle),
+    companyName: cleanString(jobContext?.companyName),
+    jobDescription: cleanString(jobContext?.jobDescription).slice(0, 3000),
+    keySkills: cleanString(jobContext?.keySkills),
+  };
+
   const prompt = `
     Generate 10 technical interview questions for a ${
       user.industry
     } professional${
     user.skills?.length ? ` with expertise in ${user.skills.join(", ")}` : ""
   }.
+    ${
+      normalizedJobContext.jobTitle
+        ? `Tailor the quiz for the role "${normalizedJobContext.jobTitle}"${normalizedJobContext.companyName ? ` at ${normalizedJobContext.companyName}` : ""}.`
+        : ""
+    }
+    ${
+      normalizedJobContext.keySkills
+        ? `Make sure the quiz covers these role signals when relevant: ${normalizedJobContext.keySkills}.`
+        : ""
+    }
+    ${
+      normalizedJobContext.jobDescription
+        ? `Job context:\n${normalizedJobContext.jobDescription}`
+        : ""
+    }
     
     Each question should be multiple choice with 4 options.
     

@@ -26,8 +26,10 @@ import { resumeSchema } from "@/app/lib/schema";
 import html2pdf from "html2pdf.js/dist/html2pdf.min.js";
 
 export default function ResumeBuilder({ initialContent }) {
-  const [activeTab, setActiveTab] = useState("edit");
-  const [previewContent, setPreviewContent] = useState(initialContent);
+  const [activeTab, setActiveTab] = useState(
+    initialContent ? "preview" : "edit"
+  );
+  const [previewContent, setPreviewContent] = useState(initialContent || "");
   const { user } = useUser();
   const [resumeMode, setResumeMode] = useState("preview");
 
@@ -56,47 +58,38 @@ export default function ResumeBuilder({ initialContent }) {
   } = useFetch(saveResume);
 
   const deferredFormValues = useDeferredValue(useWatch({ control }));
+  const {
+    contactInfo = {},
+    summary,
+    skills,
+    experience,
+    education,
+    projects,
+  } = deferredFormValues ?? {};
 
-  useEffect(() => {
-    if (initialContent) setActiveTab("preview");
-  }, [initialContent]);
+  const normalizedParts = [];
+  if (contactInfo.email) {
+    normalizedParts.push(`&#128231; ${contactInfo.email}`);
+  }
+  if (contactInfo.mobile) {
+    normalizedParts.push(`&#128241; ${contactInfo.mobile}`);
+  }
+  if (contactInfo.linkedin) {
+    normalizedParts.push(`&#128188; [LinkedIn](${contactInfo.linkedin})`);
+  }
+  if (contactInfo.twitter) {
+    normalizedParts.push(`&#128038; [Twitter](${contactInfo.twitter})`);
+  }
 
-  useEffect(() => {
-    if (activeTab !== "edit") {
-      return;
-    }
+  const contactMarkdown =
+    normalizedParts.length > 0
+      ? `## <div align="center">${user?.fullName ?? ""}</div>\n\n<div align="center">\n\n${normalizedParts.join(
+          " | "
+        )}\n\n</div>`
+      : "";
 
-    const {
-      contactInfo = {},
-      summary,
-      skills,
-      experience,
-      education,
-      projects,
-    } = deferredFormValues ?? {};
-
-    const normalizedParts = [];
-    if (contactInfo.email) {
-      normalizedParts.push(`&#128231; ${contactInfo.email}`);
-    }
-    if (contactInfo.mobile) {
-      normalizedParts.push(`&#128241; ${contactInfo.mobile}`);
-    }
-    if (contactInfo.linkedin) {
-      normalizedParts.push(`&#128188; [LinkedIn](${contactInfo.linkedin})`);
-    }
-    if (contactInfo.twitter) {
-      normalizedParts.push(`&#128038; [Twitter](${contactInfo.twitter})`);
-    }
-
-    const contactMarkdown =
-      normalizedParts.length > 0
-        ? `## <div align="center">${user?.fullName ?? ""}</div>\n\n<div align="center">\n\n${normalizedParts.join(
-            " | "
-          )}\n\n</div>`
-        : "";
-
-    const newContent = [
+  const generatedPreviewContent =
+    [
       contactMarkdown,
       summary && `## Professional Summary\n\n${summary}`,
       skills && `## Skills\n\n${skills}`,
@@ -105,10 +98,7 @@ export default function ResumeBuilder({ initialContent }) {
       entriesToMarkdown(projects, "Projects"),
     ]
       .filter(Boolean)
-      .join("\n\n");
-
-    setPreviewContent(newContent || initialContent);
-  }, [activeTab, deferredFormValues, initialContent, user?.fullName]);
+      .join("\n\n") || initialContent || "";
 
   useEffect(() => {
     if (saveResult && !isSaving) {
@@ -143,7 +133,9 @@ export default function ResumeBuilder({ initialContent }) {
 
   const onSubmit = async () => {
     try {
-      await saveResumeFn(previewContent);
+      await saveResumeFn(
+        activeTab === "preview" ? previewContent : generatedPreviewContent
+      );
     } catch (error) {
       console.error("Save error:", error);
     }
@@ -189,7 +181,16 @@ export default function ResumeBuilder({ initialContent }) {
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
+      <Tabs
+        value={activeTab}
+        onValueChange={(nextTab) => {
+          if (nextTab === "preview") {
+            setPreviewContent(generatedPreviewContent);
+          }
+
+          setActiveTab(nextTab);
+        }}
+      >
         <TabsList>
           <TabsTrigger value="edit">Form</TabsTrigger>
           <TabsTrigger value="preview">Markdown</TabsTrigger>

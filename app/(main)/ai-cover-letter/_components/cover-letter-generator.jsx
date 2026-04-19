@@ -21,7 +21,7 @@ import { coverLetterSchema } from "@/app/lib/schema";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 
-export default function CoverLetterGenerator() {
+export default function CoverLetterGenerator({ initialValues }) {
   const router = useRouter();
 
   const {
@@ -31,6 +31,7 @@ export default function CoverLetterGenerator() {
     reset,
   } = useForm({
     resolver: zodResolver(coverLetterSchema),
+    defaultValues: initialValues,
   });
 
   const {
@@ -44,9 +45,9 @@ export default function CoverLetterGenerator() {
     if (generatedLetter) {
       toast.success("Cover letter generated successfully!");
       router.push(`/ai-cover-letter/${generatedLetter.id}`);
-      reset();
+      reset(initialValues);
     }
-  }, [generatedLetter, reset, router]);
+  }, [generatedLetter, initialValues, reset, router]);
 
   const onSubmit = async (data) => {
     try {

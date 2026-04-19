@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,7 +17,7 @@ import QuizResult from "./quiz-result";
 import useFetch from "@/hooks/use-fetch";
 import { BarLoader } from "react-spinners";
 
-export default function Quiz() {
+export default function Quiz({ jobContext }) {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState([]);
   const [showExplanation, setShowExplanation] = useState(false);
@@ -34,12 +34,6 @@ export default function Quiz() {
     data: resultData,
     setData: setResultData,
   } = useFetch(saveQuizResult);
-
-  useEffect(() => {
-    if (quizData) {
-      setAnswers(new Array(quizData.length).fill(null));
-    }
-  }, [quizData]);
 
   const handleAnswer = (answer) => {
     const newAnswers = [...answers];
@@ -80,8 +74,20 @@ export default function Quiz() {
     setCurrentQuestion(0);
     setAnswers([]);
     setShowExplanation(false);
-    generateQuizFn();
     setResultData(null);
+    handleStartQuiz();
+  };
+
+  const handleStartQuiz = async () => {
+    const nextQuiz = await generateQuizFn(jobContext);
+
+    if (!nextQuiz) {
+      return;
+    }
+
+    setCurrentQuestion(0);
+    setAnswers(new Array(nextQuiz.length).fill(null));
+    setShowExplanation(false);
   };
 
   if (generatingQuiz) {
@@ -105,12 +111,14 @@ export default function Quiz() {
         </CardHeader>
         <CardContent>
           <p className="text-muted-foreground">
-            This quiz contains 10 questions specific to your industry and
-            skills. Take your time and choose the best answer for each question.
+            {jobContext?.jobTitle
+              ? `This quiz contains 10 questions tailored to ${jobContext.jobTitle}${jobContext.companyName ? ` at ${jobContext.companyName}` : ""}.`
+              : "This quiz contains 10 questions specific to your industry and skills."}{" "}
+            Take your time and choose the best answer for each question.
           </p>
         </CardContent>
         <CardFooter>
-          <Button onClick={generateQuizFn} className="w-full">
+          <Button onClick={handleStartQuiz} className="w-full">
             Start Quiz
           </Button>
         </CardFooter>

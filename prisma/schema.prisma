@@ -28,6 +28,7 @@ model User {
   assessments   Assessment[]
   resume        Resume?
   coverLetter   CoverLetter[]
+  savedJobs     SavedJob[]
 }
 
 model Assessment {
@@ -68,6 +69,38 @@ model CoverLetter {
   updatedAt       DateTime  @updatedAt
 
   @@index([userId])
+}
+
+model SavedJob {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id])
+  provider      String
+  externalJobId String
+  title         String
+  companyName   String
+  location      String?
+  locality      String?
+  listingUrl    String?
+  applyUrl      String?
+  sourceUrl     String?
+  salaryText    String?
+  jobType       String?
+  postedAt      String?
+  description   String?  @db.Text
+  matchScore    Float?
+  matchLevel    String?
+  matchReasons  String[]
+  keySkills     String[]
+  status        String   @default("saved")
+  notes         String?  @db.Text
+  atsScore      Float?
+  atsSummary    String?  @db.Text
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([userId, externalJobId])
+  @@index([userId, status])
 }
 
 // Combined Industry Trends and Salary Insights

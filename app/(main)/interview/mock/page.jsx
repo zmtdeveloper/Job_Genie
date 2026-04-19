@@ -3,7 +3,20 @@ import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Quiz from "../_components/quiz";
 
-export default function MockInterviewPage() {
+function readSearchParam(value) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+export default async function MockInterviewPage({ searchParams }) {
+  const resolvedSearchParams = await searchParams;
+  const jobContext = {
+    jobTitle: readSearchParam(resolvedSearchParams?.jobTitle) ?? "",
+    companyName: readSearchParam(resolvedSearchParams?.companyName) ?? "",
+    jobDescription: readSearchParam(resolvedSearchParams?.jobDescription) ?? "",
+    keySkills: readSearchParam(resolvedSearchParams?.keySkills) ?? "",
+  };
+  const hasJobContext = Boolean(jobContext.jobTitle || jobContext.companyName);
+
   return (
     <div className="container mx-auto space-y-4 py-6">
       <div className="flex flex-col space-y-2 mx-2">
@@ -17,12 +30,14 @@ export default function MockInterviewPage() {
         <div>
           <h1 className="text-6xl font-bold gradient-title">Mock Interview</h1>
           <p className="text-muted-foreground">
-            Test your knowledge with industry-specific questions
+            {hasJobContext
+              ? `Practice for ${jobContext.jobTitle || "this role"}${jobContext.companyName ? ` at ${jobContext.companyName}` : ""}`
+              : "Test your knowledge with industry-specific questions"}
           </p>
         </div>
       </div>
 
-      <Quiz />
+      <Quiz jobContext={jobContext} />
     </div>
   );
 }

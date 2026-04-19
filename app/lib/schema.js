@@ -70,3 +70,9 @@ export const coverLetterSchema = z.object({
   jobTitle: z.string().min(1, "Job title is required"),
   jobDescription: z.string().min(1, "Job description is required"),
 });
+
+export const jobSearchSchema = z.object({
+  query: z.string().trim().min(2, "Search term is required"),
+  company: z.string().trim().optional(),
+  provider: z.string().trim().optional(),
+});
