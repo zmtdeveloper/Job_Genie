@@ -11,8 +11,6 @@ export default async function CareerChatPage({ searchParams }) {
         initialConversation={data.selectedConversation}
         initialMode={data.selectedMode}
         draftContext={data.draftContext}
-        profileSummary={data.profileSummary}
-        trackerSummary={data.trackerSummary}
         topSavedJobs={data.topSavedJobs}
         latestAssessment={data.latestAssessment}
       />

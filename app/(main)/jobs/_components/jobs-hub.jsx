@@ -10,7 +10,6 @@ import {
   ExternalLink,
   Loader2,
   MapPin,
-  Search,
 } from "lucide-react";
 import {
   deleteSavedJob,
@@ -222,11 +221,6 @@ function trackerSummaryFromState(savedJobs, statusOptions) {
   }));
 }
 
-function getMarketLabel(locality, fallbackLocality) {
-  const normalizedLocality = cleanString(locality || fallbackLocality).toLowerCase();
-  return JOB_MARKET_LABELS[normalizedLocality] || normalizedLocality.toUpperCase();
-}
-
 function ResultCard({ job, isSelected, onSelect }) {
   return (
     <button
@@ -235,8 +229,8 @@ function ResultCard({ job, isSelected, onSelect }) {
       className={cn(
         "w-full rounded-2xl border text-left transition-all duration-200",
         isSelected
-          ? "border-slate-900 bg-slate-950/5 shadow-lg ring-1 ring-slate-900/10"
-          : "border-border/70 bg-card shadow-sm hover:-translate-y-0.5 hover:shadow-lg"
+          ? "jobs-glow-active border-sky-400/30 bg-slate-950/5 shadow-none"
+          : "jobs-glow-inner border-border/70 bg-card shadow-none hover:border-sky-400/20"
       )}
     >
       <div className="space-y-3.5 p-4">
@@ -295,7 +289,12 @@ function ResultCard({ job, isSelected, onSelect }) {
             </div>
           </div>
 
-          <div className="min-w-[104px] rounded-2xl border border-current/10 bg-black/5 p-3 text-right">
+          <div
+            className={cn(
+              "min-w-[104px] rounded-2xl border border-current/10 bg-black/5 p-3 text-right",
+              isSelected ? "jobs-glow-active" : "jobs-glow-inner"
+            )}
+          >
             <p
               className={cn(
                 "text-xs uppercase tracking-[0.24em] text-muted-foreground",
@@ -355,13 +354,13 @@ function ResultCard({ job, isSelected, onSelect }) {
 
 function EmptyTabState({ title, description, actionLabel, onAction }) {
   return (
-    <Card className="border-dashed shadow-none">
+    <Card className="jobs-glow-panel border-dashed shadow-none">
       <CardHeader>
         <CardTitle>{title}</CardTitle>
         <CardDescription>{description}</CardDescription>
       </CardHeader>
       <CardContent>
-        <Button onClick={onAction}>
+        <Button onClick={onAction} className="jobs-glow-button">
           <ArrowRight className="h-4 w-4" />
           {actionLabel}
         </Button>
@@ -448,14 +447,6 @@ export default function JobsHub({
   }, [detailCache, results.profileSummary.hasResume, selectedJob]);
   const notesDraft =
     notesDrafts[effectiveSelectedJobKey] ?? selectedJobDetail?.notes ?? "";
-
-  const topMatch = liveJobs[0]?.matchScore || 0;
-  const trackedCount = savedJobsState.length;
-  const interviewingCount =
-    effectiveTrackerSummary.find((item) => item.value === "interviewing")?.count ||
-    0;
-  const appliedCount =
-    effectiveTrackerSummary.find((item) => item.value === "applied")?.count || 0;
 
   const selectedKey = getJobKey(selectedJobDetail);
   const isDetailLoading = Boolean(selectedKey) && loadingDetailKey === selectedKey;
@@ -704,87 +695,6 @@ export default function JobsHub({
         providerOptions={availableProviders}
       />
 
-      <Card className="overflow-hidden border-0 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-700 text-white shadow-2xl">
-        <CardHeader className="space-y-3 pb-5">
-          <div className="flex flex-wrap gap-2">
-            <Badge className="bg-white/10 px-3 text-white hover:bg-white/10">
-              Personalized job workspace
-            </Badge>
-          </div>
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-            <div className="space-y-3">
-              <h1 className="text-4xl font-bold tracking-tight md:text-5xl">
-                Search Smarter & Apply With Confidence.
-              </h1>
-              <p className="max-w-2xl text-sm text-slate-300 md:text-base">
-                Find live roles, keep the strong ones in your tracker, and move into cover letters or interview prep without losing context.
-              </p>
-            </div>
-
-            <div className="flex gap-3">
-              <Button
-                variant="secondary"
-                onClick={() => setIsSearchOpen(true)}
-                className="h-10 bg-white text-slate-950 hover:bg-white/90"
-              >
-                <Search className="h-4 w-4" />
-                New Search
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => setActiveTab(JOB_TABS.SAVED)}
-                className="h-10 border-white/20 bg-white/5 text-white hover:bg-white/10"
-              >
-                <Bookmark className="h-4 w-4" />
-                Open Tracker
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
-
-        <CardContent>
-          <div className="grid gap-3 md:grid-cols-3">
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-              <p className="text-xs uppercase tracking-[0.24em] text-slate-300">
-                Search Focus
-              </p>
-              <p className="mt-2 text-xl font-semibold">
-                {results.criteria.query || "Ready to search"}
-              </p>
-              <p className="mt-2 text-sm text-slate-300">
-                {results.providerName} in{" "}
-                {getMarketLabel(results.criteria.locality, defaults.locality)}
-                {results.criteria.company
-                  ? ` with ${results.criteria.company} as a company filter`
-                  : " with company filter kept optional"}
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-              <p className="text-xs uppercase tracking-[0.24em] text-slate-300">
-                Top Match
-              </p>
-              <p className="mt-2 text-xl font-semibold">{topMatch}</p>
-              <p className="mt-2 text-sm text-slate-300">
-                Highest ranked score in the current search
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-              <p className="text-xs uppercase tracking-[0.24em] text-slate-300">
-                Tracker Pulse
-              </p>
-              <p className="mt-2 text-xl font-semibold">
-                {trackedCount} tracked / {appliedCount} applied
-              </p>
-              <p className="mt-2 text-sm text-slate-300">
-                {interviewingCount} roles currently moving through interviews
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
       <JobsFilterBar
         values={filters}
         onChange={handleFilterChange}
@@ -797,7 +707,7 @@ export default function JobsHub({
       />
 
       {error ? (
-        <Card className="border-destructive/40 shadow-lg">
+      <Card className="jobs-glow-panel border-destructive/40 shadow-none">
           <CardHeader>
             <CardTitle>Search is available, but this request failed</CardTitle>
             <CardDescription>{error}</CardDescription>
@@ -806,7 +716,7 @@ export default function JobsHub({
       ) : null}
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(340px,0.92fr)]">
-        <Card className="border border-border/70 shadow-xl">
+        <Card className="jobs-glow-panel border border-border/70 shadow-none">
           <CardHeader className="space-y-4 border-b bg-muted/20">
             <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
               <div>
@@ -825,7 +735,7 @@ export default function JobsHub({
               </div>
 
               {results.sourceUrl && activeTab !== JOB_TABS.SAVED ? (
-                <Button variant="outline" asChild>
+                <Button variant="outline" asChild className="jobs-glow-button">
                   <a
                     href={results.sourceUrl}
                     target="_blank"
@@ -844,7 +754,7 @@ export default function JobsHub({
                   <TabsTrigger
                     key={tab.value}
                     value={tab.value}
-                    className="h-auto rounded-xl border border-border/70 px-3 py-2.5 data-[state=active]:border-slate-900 data-[state=active]:bg-slate-950 data-[state=active]:text-white"
+                    className="jobs-glow-inner h-auto rounded-xl border border-border/70 px-3 py-2.5 shadow-none data-[state=active]:border-sky-400/30 data-[state=active]:bg-slate-950 data-[state=active]:text-white"
                   >
                     <span className="flex items-center gap-2">
                       {tab.label}
@@ -860,13 +770,6 @@ export default function JobsHub({
               </TabsList>
             </Tabs>
 
-            <div className="flex flex-wrap gap-2">
-              {effectiveTrackerSummary.slice(0, 3).map((statusItem) => (
-                <Badge key={statusItem.value} variant="outline">
-                  {statusItem.label}: {statusItem.count}
-                </Badge>
-              ))}
-            </div>
           </CardHeader>
 
           <CardContent className="space-y-4 p-4">
@@ -911,7 +814,7 @@ export default function JobsHub({
             </div>
 
             {isDetailLoading && visibleJobs.length > 0 ? (
-              <div className="rounded-xl border border-dashed p-3">
+              <div className="jobs-glow-inner rounded-xl border border-dashed p-3">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Loader2 className="h-4 w-4 animate-spin" />
                   Loading full role details...

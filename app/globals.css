@@ -78,6 +78,172 @@ body {
   .gradient-title {
     @apply gradient font-extrabold tracking-tighter text-transparent bg-clip-text pb-2 pr-2;
   }
+  .jobs-glow-panel {
+    background-image:
+      radial-gradient(circle at top, rgba(37, 99, 235, 0.14), transparent 58%),
+      linear-gradient(180deg, rgba(56, 189, 248, 0.04), transparent 34%);
+    box-shadow:
+      inset 0 0 0 1px rgba(125, 211, 252, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.04),
+      inset 0 18px 34px -28px rgba(14, 165, 233, 0.42),
+      inset 0 -18px 28px -30px rgba(15, 23, 42, 0.45);
+    transition:
+      border-color 0.2s ease,
+      box-shadow 0.2s ease,
+      background-color 0.2s ease,
+      transform 0.2s ease;
+  }
+  .jobs-glow-panel:hover {
+    box-shadow:
+      inset 0 0 0 1px rgba(125, 211, 252, 0.14),
+      inset 0 1px 0 rgba(255, 255, 255, 0.06),
+      inset 0 20px 38px -28px rgba(14, 165, 233, 0.52),
+      inset 0 -20px 30px -30px rgba(15, 23, 42, 0.5);
+  }
+  .jobs-glow-inner {
+    background-image:
+      radial-gradient(circle at top, rgba(37, 99, 235, 0.1), transparent 62%),
+      linear-gradient(180deg, rgba(56, 189, 248, 0.03), transparent 36%);
+    box-shadow:
+      inset 0 0 0 1px rgba(125, 211, 252, 0.06),
+      inset 0 1px 0 rgba(255, 255, 255, 0.03),
+      inset 0 14px 28px -24px rgba(14, 165, 233, 0.3);
+    transition:
+      border-color 0.2s ease,
+      box-shadow 0.2s ease,
+      background-color 0.2s ease,
+      transform 0.2s ease;
+  }
+  .jobs-glow-inner:hover {
+    box-shadow:
+      inset 0 0 0 1px rgba(125, 211, 252, 0.13),
+      inset 0 1px 0 rgba(255, 255, 255, 0.05),
+      inset 0 18px 32px -24px rgba(14, 165, 233, 0.38);
+  }
+  .jobs-glow-button {
+    background-image:
+      radial-gradient(circle at top, rgba(37, 99, 235, 0.12), transparent 60%),
+      linear-gradient(180deg, rgba(56, 189, 248, 0.035), transparent 36%);
+    box-shadow:
+      inset 0 0 0 1px rgba(125, 211, 252, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.04),
+      inset 0 16px 28px -24px rgba(14, 165, 233, 0.35);
+    transition:
+      border-color 0.2s ease,
+      box-shadow 0.2s ease,
+      background-color 0.2s ease,
+      transform 0.2s ease;
+  }
+  .jobs-glow-button:hover {
+    box-shadow:
+      inset 0 0 0 1px rgba(125, 211, 252, 0.16),
+      inset 0 1px 0 rgba(255, 255, 255, 0.06),
+      inset 0 18px 32px -24px rgba(14, 165, 233, 0.42);
+  }
+  .jobs-glow-button-primary {
+    background-image:
+      radial-gradient(circle at top, rgba(255, 255, 255, 0.55), transparent 58%),
+      linear-gradient(180deg, rgba(125, 211, 252, 0.16), transparent 42%);
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 255, 255, 0.26),
+      inset 0 1px 0 rgba(255, 255, 255, 0.7),
+      inset 0 16px 26px -18px rgba(255, 255, 255, 0.55),
+      inset 0 -12px 20px -16px rgba(125, 211, 252, 0.18);
+  }
+  .jobs-glow-button-primary:hover {
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 255, 255, 0.36),
+      inset 0 1px 0 rgba(255, 255, 255, 0.78),
+      inset 0 18px 28px -18px rgba(255, 255, 255, 0.64),
+      inset 0 -14px 22px -16px rgba(125, 211, 252, 0.22);
+  }
+  .jobs-glow-button-danger {
+    background-image:
+      radial-gradient(circle at top, rgba(248, 113, 113, 0.3), transparent 58%),
+      linear-gradient(180deg, rgba(127, 29, 29, 0.68), rgba(69, 10, 10, 0.94));
+    box-shadow:
+      inset 0 0 0 1px rgba(248, 113, 113, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.08),
+      inset 0 16px 28px -18px rgba(248, 113, 113, 0.3),
+      inset 0 -14px 22px -18px rgba(69, 10, 10, 0.45);
+  }
+  .jobs-glow-button-danger:hover {
+    box-shadow:
+      inset 0 0 0 1px rgba(252, 165, 165, 0.42),
+      inset 0 1px 0 rgba(255, 255, 255, 0.11),
+      inset 0 18px 30px -18px rgba(248, 113, 113, 0.38),
+      inset 0 -16px 24px -18px rgba(69, 10, 10, 0.52);
+  }
+  .jobs-glow-active,
+  .jobs-glow-button.jobs-glow-active,
+  .jobs-glow-button.jobs-glow-active:hover,
+  .jobs-glow-inner[data-state="active"] {
+    background-image:
+      radial-gradient(circle at top, rgba(37, 99, 235, 0.22), transparent 56%),
+      linear-gradient(180deg, rgba(56, 189, 248, 0.08), transparent 40%);
+    box-shadow:
+      inset 0 0 0 1px rgba(125, 211, 252, 0.22),
+      inset 0 1px 0 rgba(255, 255, 255, 0.08),
+      inset 0 22px 44px -28px rgba(37, 99, 235, 0.78),
+      inset 0 10px 26px -18px rgba(56, 189, 248, 0.55);
+  }
+  .chatbot-inset-panel {
+    box-shadow:
+      inset 0 0 0 1px rgba(148, 163, 184, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.04),
+      inset 0 22px 40px -30px rgba(37, 99, 235, 0.42),
+      inset 0 -18px 26px -30px rgba(2, 6, 23, 0.54);
+  }
+  .chatbot-inset-panel-strong {
+    box-shadow:
+      inset 0 0 0 1px rgba(56, 189, 248, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.06),
+      inset 0 22px 40px -28px rgba(37, 99, 235, 0.72),
+      inset 0 12px 24px -18px rgba(14, 165, 233, 0.4);
+  }
+  .chatbot-inset-active {
+    box-shadow:
+      inset 0 0 0 1px rgba(96, 165, 250, 0.18),
+      inset 0 1px 0 rgba(255, 255, 255, 0.08),
+      inset 0 26px 44px -28px rgba(37, 99, 235, 0.86),
+      inset 0 12px 24px -18px rgba(14, 165, 233, 0.48);
+  }
+  .chatbot-inset-bubble {
+    box-shadow:
+      inset 0 0 0 1px rgba(148, 163, 184, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.04),
+      inset 0 16px 30px -24px rgba(37, 99, 235, 0.28);
+  }
+  .chatbot-inset-pill {
+    box-shadow:
+      inset 0 0 0 1px rgba(125, 211, 252, 0.12),
+      inset 0 1px 0 rgba(255, 255, 255, 0.06),
+      inset 0 10px 18px -14px rgba(37, 99, 235, 0.36);
+  }
+  .chatbot-inset-button {
+    box-shadow:
+      inset 0 0 0 1px rgba(148, 163, 184, 0.1),
+      inset 0 1px 0 rgba(255, 255, 255, 0.05),
+      inset 0 14px 24px -20px rgba(37, 99, 235, 0.28);
+    transition:
+      border-color 0.2s ease,
+      box-shadow 0.2s ease,
+      background-color 0.2s ease,
+      transform 0.2s ease;
+  }
+  .chatbot-inset-button:hover {
+    box-shadow:
+      inset 0 0 0 1px rgba(125, 211, 252, 0.14),
+      inset 0 1px 0 rgba(255, 255, 255, 0.06),
+      inset 0 16px 28px -20px rgba(37, 99, 235, 0.34);
+  }
+  .chatbot-inset-composer {
+    box-shadow:
+      inset 0 0 0 1px rgba(56, 189, 248, 0.12),
+      inset 0 1px 0 rgba(255, 255, 255, 0.08),
+      inset 0 24px 42px -24px rgba(37, 99, 235, 0.82),
+      inset 0 12px 24px -18px rgba(14, 165, 233, 0.56);
+  }
 }
 
 .hero-image-wrapper {

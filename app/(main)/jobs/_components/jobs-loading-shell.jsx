@@ -4,7 +4,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 export default function JobsLoadingShell() {
   return (
     <div className="space-y-6 px-4 md:px-1">
-      <Card className="overflow-hidden border-0 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 text-white shadow-2xl">
+      <Card className="jobs-glow-panel overflow-hidden border-0 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 text-white shadow-none">
         <CardHeader className="space-y-4 pb-4">
           <Skeleton className="h-5 w-40 bg-white/15" />
           <Skeleton className="h-12 w-72 bg-white/15" />
@@ -19,7 +19,7 @@ export default function JobsLoadingShell() {
         </CardContent>
       </Card>
 
-      <Card className="sticky top-20 z-20 border shadow-lg">
+      <Card className="jobs-glow-panel sticky top-20 z-20 border shadow-none">
         <CardContent className="grid gap-3 p-4 md:grid-cols-[1.3fr_1fr_1fr_auto]">
           <Skeleton className="h-11" />
           <Skeleton className="h-11" />
@@ -29,7 +29,7 @@ export default function JobsLoadingShell() {
       </Card>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(360px,0.9fr)]">
-        <Card className="min-h-[680px]">
+        <Card className="jobs-glow-panel min-h-[680px] shadow-none">
           <CardHeader className="space-y-3">
             <Skeleton className="h-10 w-80" />
             <Skeleton className="h-4 w-48" />
@@ -38,7 +38,7 @@ export default function JobsLoadingShell() {
             {Array.from({ length: 4 }).map((_, index) => (
               <div
                 key={index}
-                className="rounded-2xl border border-border/60 p-4 shadow-sm"
+                className="jobs-glow-inner rounded-2xl border border-border/60 p-4 shadow-none"
               >
                 <div className="space-y-3">
                   <Skeleton className="h-6 w-52" />
@@ -56,7 +56,7 @@ export default function JobsLoadingShell() {
           </CardContent>
         </Card>
 
-        <Card className="min-h-[680px]">
+        <Card className="jobs-glow-panel min-h-[680px] shadow-none">
           <CardHeader className="space-y-4">
             <Skeleton className="h-10 w-52" />
             <Skeleton className="h-6 w-full" />

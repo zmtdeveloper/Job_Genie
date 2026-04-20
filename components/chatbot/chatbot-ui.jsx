@@ -357,7 +357,7 @@ function MessageBubble({ message, onAction }) {
     <div className={cn("flex w-full", isAssistant ? "justify-start" : "justify-end")}>
       <div
         className={cn(
-          "max-w-3xl rounded-[24px] border px-5 py-4 shadow-[0_20px_60px_-40px_rgba(0,0,0,0.8)]",
+          "chatbot-inset-bubble max-w-3xl rounded-[24px] border px-5 py-4 shadow-none",
           isAssistant
             ? "border-border/70 bg-card/95 backdrop-blur"
             : "border-slate-800 bg-slate-950 text-white"
@@ -399,7 +399,7 @@ function MessageBubble({ message, onAction }) {
                   key={`${action.type}-${index}`}
                   size="sm"
                   variant="outline"
-                  className="rounded-full"
+                  className="chatbot-inset-button rounded-full shadow-none"
                   asChild
                 >
                   <Link href={action.href}>{action.label}</Link>
@@ -409,7 +409,7 @@ function MessageBubble({ message, onAction }) {
                   key={`${action.type}-${index}`}
                   size="sm"
                   variant="outline"
-                  className="rounded-full"
+                  className="chatbot-inset-button rounded-full shadow-none"
                   onClick={() => onAction(action)}
                 >
                   {action.label}
@@ -423,26 +423,11 @@ function MessageBubble({ message, onAction }) {
   );
 }
 
-function MiniStat({ label, value }) {
-  return (
-    <div className="flex items-center justify-between gap-3 rounded-[24px] border border-border/70 bg-background/70 px-4 py-3">
-      <p className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">
-        {label}
-      </p>
-      <div className="rounded-full border border-sky-400/18 bg-sky-500/10 px-3 py-1 text-sm font-semibold text-sky-100 shadow-[0_10px_22px_-18px_rgba(37,99,235,0.85)]">
-        {value}
-      </div>
-    </div>
-  );
-}
-
 export default function ChatbotUI({
   initialConversations,
   initialConversation,
   initialMode,
   draftContext,
-  profileSummary,
-  trackerSummary,
   topSavedJobs,
   latestAssessment,
 }) {
@@ -556,23 +541,6 @@ export default function ChatbotUI({
         : "Start a focused conversation. Your profile, resume, tracker, and saved jobs are already in context.";
   const showPromptCards =
     activeMessages.length === 0 && !sendingMessage && !input.trim();
-  const profileSignalValue =
-    typeof activeContextJob?.atsScore === "number"
-      ? Math.round(activeContextJob.atsScore)
-      : typeof profileSummary.resumeScore === "number"
-        ? Math.round(profileSummary.resumeScore)
-        : 0;
-  const profileSignalLabel =
-    typeof activeContextJob?.atsScore === "number"
-      ? profileSignalValue
-      : profileSummary.hasResume
-        ? profileSummary.resumeScore || "Ready"
-        : "Missing";
-  const profileSignalTitle =
-    typeof activeContextJob?.atsScore === "number"
-      ? "Current ATS signal"
-      : "Resume signal";
-
   const startDraftConversation = (nextMode, nextDraftContext = null) => {
     setActiveConversation(null);
     setActiveMode(nextMode);
@@ -834,7 +802,7 @@ export default function ChatbotUI({
       <div
         className="grid gap-4 lg:h-full lg:min-h-0 xl:grid-cols-[300px_minmax(0,1fr)_320px]"
       >
-        <aside className="flex min-h-[360px] flex-col overflow-hidden rounded-[24px] border border-border/70 bg-card/90 shadow-[0_30px_80px_-45px_rgba(0,0,0,0.9)] backdrop-blur xl:min-h-0 xl:h-full">
+        <aside className="chatbot-inset-panel flex min-h-[360px] flex-col overflow-hidden rounded-[24px] border border-border/70 bg-card/90 shadow-none backdrop-blur xl:min-h-0 xl:h-full">
           <div className="border-b border-border/60 p-4">
             <div className="flex items-center justify-between gap-3">
               <div>
@@ -847,7 +815,7 @@ export default function ChatbotUI({
               <Button
                 type="button"
                 size="icon"
-                className="h-10 w-10 rounded-full"
+                className="chatbot-inset-button h-10 w-10 rounded-full shadow-none"
                 onClick={() => startDraftConversation(activeMode, currentScopedDraft)}
                 aria-label="Start new chat"
               >
@@ -855,7 +823,7 @@ export default function ChatbotUI({
               </Button>
             </div>
 
-            <div className="mt-4 rounded-[24px] border border-sky-400/18 bg-[radial-gradient(circle_at_top,rgba(37,99,235,0.18),transparent_62%),linear-gradient(180deg,rgba(10,16,30,0.74),rgba(8,12,24,0.58))] p-3 shadow-[0_0_0_1px_rgba(56,189,248,0.06),0_24px_50px_-34px_rgba(37,99,235,0.95),0_10px_26px_-18px_rgba(14,165,233,0.5)]">
+            <div className="chatbot-inset-panel-strong mt-4 rounded-[24px] border border-sky-400/18 bg-[radial-gradient(circle_at_top,rgba(37,99,235,0.18),transparent_62%),linear-gradient(180deg,rgba(10,16,30,0.74),rgba(8,12,24,0.58))] p-3 shadow-none">
               <div className="flex flex-wrap gap-2">
               {CHAT_MODES.map((mode) => {
                 const Icon = MODE_ICONS[mode.id] || Sparkles;
@@ -870,8 +838,8 @@ export default function ChatbotUI({
                     className={cn(
                       "inline-flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-sm font-medium transition-all",
                       isSelectedMode
-                        ? "border-sky-400/30 bg-[linear-gradient(180deg,rgba(12,23,50,0.98),rgba(10,18,39,0.92))] text-white shadow-[0_18px_36px_-24px_rgba(37,99,235,0.85)]"
-                        : "border-white/10 bg-white/[0.03] text-foreground/88 hover:border-sky-400/16 hover:bg-sky-500/8 hover:text-white"
+                        ? "chatbot-inset-active border-sky-400/30 bg-[linear-gradient(180deg,rgba(12,23,50,0.98),rgba(10,18,39,0.92))] text-white shadow-none"
+                        : "chatbot-inset-button border-white/10 bg-white/[0.03] text-foreground/88 shadow-none hover:border-sky-400/16 hover:bg-sky-500/8 hover:text-white"
                     )}
                   >
                     <Icon className="h-4 w-4" />
@@ -898,8 +866,8 @@ export default function ChatbotUI({
                         className={cn(
                           "rounded-[24px] border p-4 transition-all",
                           getConversationKey(activeConversation) === conversation.id
-                            ? "border-slate-900 bg-slate-950 text-white shadow-[0_22px_70px_-50px_rgba(15,23,42,1)]"
-                            : "border-border/70 bg-background/70 shadow-sm hover:-translate-y-0.5 hover:shadow-lg"
+                            ? "chatbot-inset-active border-slate-900 bg-slate-950 text-white shadow-none"
+                            : "chatbot-inset-panel border-border/70 bg-background/70 shadow-none hover:-translate-y-0.5 hover:border-sky-400/16"
                         )}
                       >
                         <div className="flex items-start justify-between gap-3">
@@ -958,7 +926,7 @@ export default function ChatbotUI({
                               onClick={() => handleDeleteConversation(conversation.id)}
                               disabled={deletingConversation}
                               className={cn(
-                                "h-8 w-8 rounded-full",
+                                "chatbot-inset-button h-8 w-8 rounded-full shadow-none",
                                 getConversationKey(activeConversation) ===
                                   conversation.id
                                   ? "text-white/70 hover:bg-white/10 hover:text-white"
@@ -983,14 +951,14 @@ export default function ChatbotUI({
           </div>
         </aside>
 
-        <section className="flex min-h-[520px] flex-col overflow-hidden rounded-[24px] border border-border/70 bg-card/90 shadow-[0_30px_90px_-45px_rgba(0,0,0,0.95)] backdrop-blur xl:min-h-0 xl:h-full">
+        <section className="chatbot-inset-panel flex min-h-[520px] flex-col overflow-hidden rounded-[24px] border border-border/70 bg-card/90 shadow-none backdrop-blur xl:min-h-0 xl:h-full">
           <div className="relative mx-3 mt-3 overflow-hidden rounded-[24px] border border-sky-500/12 bg-[radial-gradient(circle_at_top_left,rgba(37,99,235,0.22),transparent_36%),radial-gradient(circle_at_top_right,rgba(14,165,233,0.16),transparent_34%),linear-gradient(180deg,rgba(10,14,26,0.98),rgba(9,13,24,0.94))] px-4 pb-3 pt-4 shadow-[inset_0_-1px_0_rgba(148,163,184,0.08)] md:px-6">
             <div className="pointer-events-none absolute inset-x-16 top-0 h-20 rounded-full bg-[radial-gradient(circle,rgba(56,189,248,0.16),transparent_68%)] blur-3xl" />
             <div className="flex flex-col gap-2">
               <div className="space-y-2">
                 <Badge
                   variant="outline"
-                  className="w-fit rounded-full border-sky-400/25 bg-sky-500/10 px-2.5 py-0.5 text-sky-100 shadow-[0_12px_28px_-18px_rgba(37,99,235,0.85)]"
+                  className="chatbot-inset-pill w-fit rounded-full border-sky-400/25 bg-sky-500/10 px-2.5 py-0.5 text-sky-100 shadow-none"
                 >
                   Job Genie&apos;s advanced personalized chatbot
                 </Badge>
@@ -1006,7 +974,7 @@ export default function ChatbotUI({
             </div>
 
             {activeContextJob ? (
-              <div className="mt-3 rounded-[24px] border border-sky-400/12 bg-[linear-gradient(180deg,rgba(10,16,30,0.86),rgba(8,12,24,0.76))] p-3.5 shadow-[0_20px_40px_-34px_rgba(14,165,233,0.8)] backdrop-blur">
+              <div className="chatbot-inset-panel-strong mt-3 rounded-[24px] border border-sky-400/12 bg-[linear-gradient(180deg,rgba(10,16,30,0.86),rgba(8,12,24,0.76))] p-3.5 shadow-none backdrop-blur">
                 <div className="space-y-2.5">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <p className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">
@@ -1066,7 +1034,7 @@ export default function ChatbotUI({
                 </div>
               </div>
             ) : activeContextCompany ? (
-              <div className="mt-3 rounded-[24px] border border-sky-400/12 bg-[linear-gradient(180deg,rgba(10,16,30,0.86),rgba(8,12,24,0.76))] p-3.5 shadow-[0_20px_40px_-34px_rgba(14,165,233,0.8)] backdrop-blur">
+              <div className="chatbot-inset-panel-strong mt-3 rounded-[24px] border border-sky-400/12 bg-[linear-gradient(180deg,rgba(10,16,30,0.86),rgba(8,12,24,0.76))] p-3.5 shadow-none backdrop-blur">
                 <div className="flex flex-col gap-2.5">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <p className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">
@@ -1132,7 +1100,7 @@ export default function ChatbotUI({
                         key={prompt}
                         type="button"
                         onClick={() => handleQuickPrompt(prompt)}
-                        className="min-h-[66px] rounded-[24px] border border-sky-400/18 bg-[radial-gradient(circle_at_top,rgba(37,99,235,0.16),transparent_62%),linear-gradient(180deg,rgba(10,14,25,0.96),rgba(8,12,22,0.88))] px-3.5 py-2.5 text-left text-[13px] font-semibold leading-5 text-foreground/95 shadow-[0_18px_36px_-28px_rgba(37,99,235,0.9),0_8px_22px_-18px_rgba(14,165,233,0.5)] transition-all hover:-translate-y-0.5 hover:border-sky-300/28 hover:bg-[radial-gradient(circle_at_top,rgba(37,99,235,0.22),transparent_60%),linear-gradient(180deg,rgba(12,18,34,0.98),rgba(9,14,28,0.92))] hover:text-white"
+                        className="chatbot-inset-panel-strong min-h-[66px] rounded-[24px] border border-sky-400/18 bg-[radial-gradient(circle_at_top,rgba(37,99,235,0.16),transparent_62%),linear-gradient(180deg,rgba(10,14,25,0.96),rgba(8,12,22,0.88))] px-3.5 py-2.5 text-left text-[13px] font-semibold leading-5 text-foreground/95 shadow-none transition-all hover:-translate-y-0.5 hover:border-sky-300/28 hover:bg-[radial-gradient(circle_at_top,rgba(37,99,235,0.22),transparent_60%),linear-gradient(180deg,rgba(12,18,34,0.98),rgba(9,14,28,0.92))] hover:text-white"
                       >
                         {prompt}
                       </button>
@@ -1141,7 +1109,7 @@ export default function ChatbotUI({
                 </div>
               ) : null}
 
-              <div className="relative -translate-y-1 rounded-[24px] border border-sky-400/35 bg-[radial-gradient(circle_at_top,rgba(37,99,235,0.24),transparent_52%),linear-gradient(180deg,rgba(9,14,28,0.99),rgba(8,12,22,0.94))] px-2.5 py-1.5 shadow-[0_0_0_1px_rgba(56,189,248,0.08),0_28px_65px_-34px_rgba(37,99,235,1),0_16px_38px_-20px_rgba(14,165,233,0.75),inset_0_1px_0_rgba(255,255,255,0.08)]">
+              <div className="chatbot-inset-composer relative -translate-y-1 rounded-[24px] border border-sky-400/35 bg-[radial-gradient(circle_at_top,rgba(37,99,235,0.24),transparent_52%),linear-gradient(180deg,rgba(9,14,28,0.99),rgba(8,12,22,0.94))] px-2.5 py-1.5 shadow-none">
                 {activeContextJob ? (
                   <div className="mb-2 flex flex-wrap gap-2">
                     <Badge variant="secondary" className="rounded-full">
@@ -1178,7 +1146,7 @@ export default function ChatbotUI({
                       isActionLoading ||
                       isDeletingActiveConversation
                     }
-                    className="h-8 shrink-0 rounded-full px-3.5"
+                    className="chatbot-inset-active h-8 shrink-0 rounded-full px-3.5 shadow-none"
                   >
                     <SendHorizontal className="h-4 w-4" />
                     Send
@@ -1189,7 +1157,7 @@ export default function ChatbotUI({
           </div>
         </section>
 
-        <aside className="flex min-h-[320px] flex-col overflow-hidden rounded-[24px] border border-border/70 bg-card/90 shadow-[0_30px_90px_-45px_rgba(0,0,0,0.95)] backdrop-blur xl:min-h-0 xl:h-full">
+        <aside className="chatbot-inset-panel flex min-h-[320px] flex-col overflow-hidden rounded-[24px] border border-border/70 bg-card/90 shadow-none backdrop-blur xl:min-h-0 xl:h-full">
           <div className="border-b border-border/60 p-4">
             <div>
               <p className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">
@@ -1202,61 +1170,10 @@ export default function ChatbotUI({
           </div>
 
           <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4">
-            <div className="rounded-[24px] border border-sky-400/18 bg-[radial-gradient(circle_at_top,rgba(37,99,235,0.18),transparent_58%),linear-gradient(180deg,rgba(10,14,25,0.94),rgba(8,12,22,0.82))] p-4 shadow-[0_0_0_1px_rgba(56,189,248,0.05),0_24px_44px_-32px_rgba(37,99,235,0.95),0_12px_26px_-20px_rgba(14,165,233,0.45)]">
-                <div className="flex items-center gap-3">
-                  <div className="rounded-[24px] border border-sky-400/16 bg-sky-500/8 p-3 shadow-[0_12px_24px_-18px_rgba(37,99,235,0.85)]">
-                    <Sparkles className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <p className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">
-                      Profile signal
-                    </p>
-                    <p className="mt-1 text-base font-semibold">
-                      {profileSummary.industry || "Career Profile"}
-                    </p>
-                  </div>
-                </div>
-
-                <p className="mt-3 text-sm text-muted-foreground">
-                  {profileSummary.experience || 0} years experience
-                </p>
-
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {profileSummary.skills?.length ? (
-                    profileSummary.skills.map((skill) => (
-                      <Badge key={skill} variant="outline" className="rounded-full">
-                        {skill}
-                      </Badge>
-                    ))
-                  ) : (
-                    <p className="text-sm text-muted-foreground">
-                      Add more skills in onboarding to sharpen responses further.
-                    </p>
-                  )}
-                </div>
-
-                <div className="mt-4">
-                  <div className="mb-2 flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">{profileSignalTitle}</span>
-                    <span className="font-semibold">{profileSignalLabel}</span>
-                  </div>
-                  <Progress value={profileSignalValue} className="h-2" />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <MiniStat label="Tracked" value={trackerSummary.total || 0} />
-                <MiniStat label="Applied" value={trackerSummary.applied || 0} />
-                <MiniStat
-                  label="Interviewing"
-                  value={trackerSummary.interviewing || 0}
-                />
-              </div>
-
               {activeContextJob ? (
-                <div className="rounded-[24px] border border-border/70 bg-background/70 p-4">
+                <div className="chatbot-inset-panel rounded-[24px] border border-border/70 bg-background/70 p-4 shadow-none">
                   <div className="flex items-start gap-3">
-                    <div className="rounded-[24px] border border-border/70 bg-background p-3">
+                    <div className="chatbot-inset-pill rounded-[24px] border border-border/70 bg-background p-3 shadow-none">
                       <BriefcaseBusiness className="h-5 w-5" />
                     </div>
                     <div className="min-w-0 flex-1">
@@ -1303,7 +1220,7 @@ export default function ChatbotUI({
                       <Button
                         variant="outline"
                         size="sm"
-                        className="rounded-full"
+                        className="chatbot-inset-button rounded-full shadow-none"
                         asChild
                       >
                         <Link
@@ -1320,7 +1237,7 @@ export default function ChatbotUI({
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="rounded-full"
+                        className="chatbot-inset-button rounded-full shadow-none"
                         asChild
                       >
                         <Link href={activeContextJob.coverLetterHref}>
@@ -1330,35 +1247,15 @@ export default function ChatbotUI({
                     ) : null}
                   </div>
                 </div>
-              ) : (
-                <div className="rounded-[24px] border border-dashed border-border/70 bg-background/50 p-4">
-                  <div className="flex items-start gap-3">
-                    <div className="rounded-[24px] border border-border/70 bg-background p-3">
-                      <BriefcaseBusiness className="h-5 w-5" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold">No role context loaded</p>
-                      <p className="mt-1 text-sm text-muted-foreground">
-                        Jump in from a saved role or use the Jobs page to ask AI
-                        about a specific listing.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
+              ) : null}
 
-              <div className="rounded-[24px] border border-border/70 bg-background/70 p-4">
+              <div className="chatbot-inset-panel rounded-[24px] border border-border/70 bg-background/70 p-4 shadow-none">
                 <div className="flex items-center gap-3">
-                  <div className="rounded-[24px] border border-border/70 bg-background p-3">
+                  <div className="chatbot-inset-pill rounded-[24px] border border-border/70 bg-background p-3 shadow-none">
                     <BarChart3 className="h-5 w-5" />
                   </div>
                   <div>
-                    <p className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">
-                      Priority roles
-                    </p>
-                    <p className="mt-1 text-base font-semibold">
-                      Best saved jobs to revisit
-                    </p>
+                    <p className="text-base font-semibold">Saved JOBs</p>
                   </div>
                 </div>
 
@@ -1376,7 +1273,7 @@ export default function ChatbotUI({
                             draftPrompt: "",
                           })
                         }
-                        className="w-full rounded-[24px] border border-border/70 bg-background/80 p-4 text-left transition-all hover:-translate-y-0.5 hover:shadow-lg"
+                        className="chatbot-inset-button w-full rounded-[24px] border border-border/70 bg-background/80 p-4 text-left shadow-none transition-all hover:-translate-y-0.5 hover:border-sky-400/18"
                       >
                         <div className="flex items-start justify-between gap-3">
                           <div>
@@ -1405,9 +1302,9 @@ export default function ChatbotUI({
                 </div>
               </div>
 
-              <div className="rounded-[24px] border border-border/70 bg-background/70 p-4">
+              <div className="chatbot-inset-panel rounded-[24px] border border-border/70 bg-background/70 p-4 shadow-none">
                 <div className="flex items-center gap-3">
-                  <div className="rounded-[24px] border border-border/70 bg-background p-3">
+                  <div className="chatbot-inset-pill rounded-[24px] border border-border/70 bg-background p-3 shadow-none">
                     <BadgeCheck className="h-5 w-5" />
                   </div>
                   <div>
@@ -1442,7 +1339,7 @@ export default function ChatbotUI({
 
                     <Button
                       variant="outline"
-                      className="mt-4 w-full rounded-full"
+                      className="chatbot-inset-button mt-4 w-full rounded-full shadow-none"
                       onClick={() => handleModeSwitch("interview-coach")}
                     >
                       Switch To Interview Coach
