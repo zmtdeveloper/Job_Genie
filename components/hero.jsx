@@ -4,8 +4,9 @@ import { useEffect, useRef } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import SignInModalButton from "@/components/sign-in-modal-button";
 
-const HeroSection = () => {
+const HeroSection = ({ isSignedIn = false, signInRedirectUrl = "/dashboard" }) => {
   const imageRef = useRef(null);
 
   useEffect(() => {
@@ -41,11 +42,22 @@ const HeroSection = () => {
           </p>
         </div>
         <div className="flex justify-center space-x-4">
-          <Link href="/dashboard">
-            <Button size="lg" className="px-8">
+          {isSignedIn ? (
+            <Link href="/dashboard">
+              <Button size="lg" className="px-8">
+                Get Started
+              </Button>
+            </Link>
+          ) : (
+            <SignInModalButton
+              size="lg"
+              className="px-8"
+              forceRedirectUrl={signInRedirectUrl}
+              fallbackRedirectUrl={signInRedirectUrl}
+            >
               Get Started
-            </Button>
-          </Link>
+            </SignInModalButton>
+          )}
           <Link href="https://www.youtube.com/roadsidecoder">
             <Button size="lg" variant="outline" className="px-8">
               Watch Demo

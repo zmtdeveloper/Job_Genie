@@ -1,9 +1,14 @@
+import { redirect } from "next/navigation";
 import { checkUser } from "@/lib/checkUser";
 
 const MainLayout = async ({ children }) => {
-  await checkUser();
+  const user = await checkUser();
 
-  return <div className="container mx-auto mt-24 mb-20">{children}</div>;
+  if (!user) {
+    redirect("/?auth=required");
+  }
+
+  return <div className="container mx-auto pb-8 pt-24">{children}</div>;
 };
 
 export default MainLayout;

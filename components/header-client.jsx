@@ -19,6 +19,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import SignInModalButton from "@/components/sign-in-modal-button";
 
 const growthTools = [
   {
@@ -115,9 +116,7 @@ export default function HeaderClient({ isSignedIn }) {
               />
             </>
           ) : (
-            <Link href="/sign-in">
-              <Button variant="outline">Sign In</Button>
-            </Link>
+            <SignInModalButton variant="outline">Sign In</SignInModalButton>
           )}
         </div>
       </nav>

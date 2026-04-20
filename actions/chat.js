@@ -11,7 +11,11 @@ import {
   CHAT_SCOPE_TYPES,
 } from "@/lib/chat/constants";
 import { getJobProviderConfig } from "@/lib/jobs/config";
-import { cleanString } from "@/lib/jobs/utils";
+import {
+  buildAtsAnalysis,
+  cleanString,
+  extractJobSkills,
+} from "@/lib/jobs/utils";
 
 function pickSingleValue(value) {
   return Array.isArray(value) ? value[0] : value;
@@ -38,6 +42,22 @@ function normalizeMode(value) {
 
 function getModeConfig(modeId) {
   return CHAT_MODES.find((mode) => mode.id === modeId) || CHAT_MODES[0];
+}
+
+function normalizeAssistantReply(reply) {
+  return cleanString(reply)
+    .replace(/\r\n/g, "\n")
+    .replace(/\*\*(.*?)\*\*/g, "$1")
+    .replace(/__(.*?)__/g, "$1")
+    .replace(/`{1,3}([^`]+?)`{1,3}/g, "$1")
+    .replace(/^\s*\*\s+/gm, "- ")
+    .replace(/^#{1,6}\s*/gm, "")
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, "$1")
+    .replace(/\*\*/g, "")
+    .replace(/__/g, "")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
 }
 
 function normalizeConversationJob(job) {
@@ -87,39 +107,45 @@ function serializeChatMessage(record) {
   return {
     id: record.id,
     role: record.role,
-    content: record.content,
+    content:
+      record.role === "assistant"
+        ? normalizeAssistantReply(record.content)
+        : cleanString(record.content),
     actions: Array.isArray(record.actions) ? record.actions : [],
     createdAt: record.createdAt?.toISOString?.() || "",
   };
 }
 
-function serializeSavedJobForChat(record) {
+function serializeSavedJobForChat(record, resumeContent = "") {
   const providerConfig = getJobProviderConfig(record.provider);
 
-  return normalizeConversationJob({
-    externalJobId: record.externalJobId,
-    provider: record.provider,
-    providerName: providerConfig.name,
-    title: record.title,
-    company: record.companyName,
-    location: record.location,
-    locality: record.locality,
-    salary: record.salaryText,
-    jobType: record.jobType,
-    postedAt: record.postedAt,
-    description: record.description,
-    url: record.listingUrl,
-    applyUrl: record.applyUrl,
-    sourceUrl: record.sourceUrl,
-    matchScore: record.matchScore,
-    matchLevel: record.matchLevel,
-    keySkills: record.keySkills,
-    status: record.status,
-    isSaved: true,
-    atsScore: record.atsScore,
-    atsSummary: record.atsSummary,
-    notes: record.notes,
-  });
+  return buildChatJobSnapshot(
+    {
+      externalJobId: record.externalJobId,
+      provider: record.provider,
+      providerName: providerConfig.name,
+      title: record.title,
+      company: record.companyName,
+      location: record.location,
+      locality: record.locality,
+      salary: record.salaryText,
+      jobType: record.jobType,
+      postedAt: record.postedAt,
+      description: record.description,
+      url: record.listingUrl,
+      applyUrl: record.applyUrl,
+      sourceUrl: record.sourceUrl,
+      matchScore: record.matchScore,
+      matchLevel: record.matchLevel,
+      keySkills: record.keySkills,
+      status: record.status,
+      isSaved: true,
+      atsScore: record.atsScore,
+      atsSummary: record.atsSummary,
+      notes: record.notes,
+    },
+    resumeContent
+  );
 }
 
 function buildTrackerSummary(savedJobs) {
@@ -186,7 +212,34 @@ function enrichJobForChat(job) {
   };
 }
 
-function normalizeConversationMetadata(metadata) {
+function buildChatJobSnapshot(job, resumeContent = "") {
+  const normalizedJob = normalizeConversationJob(job);
+
+  if (!normalizedJob) {
+    return null;
+  }
+
+  const keySkills =
+    normalizedJob.keySkills.length > 0
+      ? normalizedJob.keySkills
+      : extractJobSkills(normalizedJob);
+  const ats = buildAtsAnalysis(
+    {
+      ...normalizedJob,
+      keySkills,
+    },
+    resumeContent
+  );
+
+  return enrichJobForChat({
+    ...normalizedJob,
+    keySkills,
+    atsScore: ats.score ?? normalizedJob.atsScore ?? null,
+    atsSummary: ats.summary || normalizedJob.atsSummary,
+  });
+}
+
+function normalizeConversationMetadata(metadata, resumeContent = "") {
   const normalizedMetadata =
     metadata && typeof metadata === "object" && !Array.isArray(metadata)
       ? metadata
@@ -195,12 +248,12 @@ function normalizeConversationMetadata(metadata) {
   return {
     companyName: cleanString(normalizedMetadata.companyName),
     draftPrompt: cleanString(normalizedMetadata.draftPrompt),
-    job: enrichJobForChat(normalizedMetadata.job),
+    job: buildChatJobSnapshot(normalizedMetadata.job, resumeContent),
   };
 }
 
-function serializeConversation(record) {
-  const metadata = normalizeConversationMetadata(record.metadata);
+function serializeConversation(record, resumeContent = "") {
+  const metadata = normalizeConversationMetadata(record.metadata, resumeContent);
   const latestMessage =
     Array.isArray(record.messages) && record.messages.length > 0
       ? record.messages[record.messages.length - 1]
@@ -215,7 +268,10 @@ function serializeConversation(record) {
     relatedCompanyName: cleanString(record.relatedCompanyName),
     updatedAt: record.updatedAt?.toISOString?.() || "",
     lastMessageAt: record.lastMessageAt?.toISOString?.() || "",
-    lastMessagePreview: cleanString(latestMessage?.content).slice(0, 140),
+    lastMessagePreview:
+      latestMessage?.role === "assistant"
+        ? normalizeAssistantReply(latestMessage?.content).slice(0, 140)
+        : cleanString(latestMessage?.content).slice(0, 140),
     messageCount: record._count?.messages || 0,
     contextJob: metadata.job,
     companyName: metadata.companyName || cleanString(record.relatedCompanyName),
@@ -285,7 +341,9 @@ async function getChatUserContext() {
     throw new Error("User not found");
   }
 
-  const savedJobs = user.savedJobs.map((job) => enrichJobForChat(serializeSavedJobForChat(job)));
+  const savedJobs = user.savedJobs
+    .map((job) => serializeSavedJobForChat(job, user.resume?.content || ""))
+    .filter(Boolean);
   const topSavedJobs = [...savedJobs]
     .sort((left, right) => (right.matchScore || 0) - (left.matchScore || 0))
     .slice(0, 4);
@@ -323,7 +381,7 @@ async function getChatUserContext() {
   };
 }
 
-async function getSavedJobContext(userId, externalJobId) {
+async function getSavedJobContext(userId, externalJobId, resumeContent = "") {
   if (!externalJobId) {
     return null;
   }
@@ -337,7 +395,7 @@ async function getSavedJobContext(userId, externalJobId) {
     },
   });
 
-  return savedJob ? enrichJobForChat(serializeSavedJobForChat(savedJob)) : null;
+  return savedJob ? serializeSavedJobForChat(savedJob, resumeContent) : null;
 }
 
 async function buildDraftContext(profile, searchParams) {
@@ -348,55 +406,63 @@ async function buildDraftContext(profile, searchParams) {
     pickSingleValue(searchParams?.companyName) ?? pickSingleValue(searchParams?.company)
   );
 
-  const savedJob = await getSavedJobContext(profile.userId, externalJobId);
-
-  if (savedJob) {
-    return {
-      scopeType: CHAT_SCOPE_TYPES.JOB,
-      companyName: savedJob.company,
-      job: savedJob,
-      draftPrompt: "",
-    };
-  }
-
   const fallbackJob =
     externalJobId || cleanString(pickSingleValue(searchParams?.title))
-      ? enrichJobForChat({
-          externalJobId,
-          provider: cleanString(pickSingleValue(searchParams?.provider)),
-          title: cleanString(pickSingleValue(searchParams?.title)),
-          company: companyName,
-          location: cleanString(pickSingleValue(searchParams?.location)),
-          locality: cleanString(pickSingleValue(searchParams?.locality)),
-          salary: cleanString(pickSingleValue(searchParams?.salary)),
-          jobType: cleanString(pickSingleValue(searchParams?.jobType)),
-          postedAt: cleanString(pickSingleValue(searchParams?.postedAt)),
-          description: cleanString(pickSingleValue(searchParams?.description)),
-          url: cleanString(pickSingleValue(searchParams?.url)),
-          applyUrl: cleanString(pickSingleValue(searchParams?.applyUrl)),
-          sourceUrl: cleanString(pickSingleValue(searchParams?.sourceUrl)),
-          keySkills: cleanString(pickSingleValue(searchParams?.keySkills))
-            .split(",")
-            .map((skill) => skill.trim())
-            .filter(Boolean),
-          matchScore:
-            Number(cleanString(pickSingleValue(searchParams?.matchScore))) || 0,
-          matchLevel: cleanString(pickSingleValue(searchParams?.matchLevel)),
-          status: cleanString(pickSingleValue(searchParams?.status)) || "saved",
-          isSaved: false,
-          atsScore: cleanString(pickSingleValue(searchParams?.atsScore))
-            ? Number(cleanString(pickSingleValue(searchParams?.atsScore)))
-            : null,
-          atsSummary: cleanString(pickSingleValue(searchParams?.atsSummary)),
-          notes: cleanString(pickSingleValue(searchParams?.notes)),
-        })
+      ? buildChatJobSnapshot(
+          {
+            externalJobId,
+            provider: cleanString(pickSingleValue(searchParams?.provider)),
+            title: cleanString(pickSingleValue(searchParams?.title)),
+            company: companyName,
+            location: cleanString(pickSingleValue(searchParams?.location)),
+            locality: cleanString(pickSingleValue(searchParams?.locality)),
+            salary: cleanString(pickSingleValue(searchParams?.salary)),
+            jobType: cleanString(pickSingleValue(searchParams?.jobType)),
+            postedAt: cleanString(pickSingleValue(searchParams?.postedAt)),
+            description: cleanString(pickSingleValue(searchParams?.description)),
+            url: cleanString(pickSingleValue(searchParams?.url)),
+            applyUrl: cleanString(pickSingleValue(searchParams?.applyUrl)),
+            sourceUrl: cleanString(pickSingleValue(searchParams?.sourceUrl)),
+            keySkills: cleanString(pickSingleValue(searchParams?.keySkills))
+              .split(",")
+              .map((skill) => skill.trim())
+              .filter(Boolean),
+            matchScore:
+              Number(cleanString(pickSingleValue(searchParams?.matchScore))) || 0,
+            matchLevel: cleanString(pickSingleValue(searchParams?.matchLevel)),
+            status: cleanString(pickSingleValue(searchParams?.status)) || "saved",
+            isSaved: false,
+            atsScore: cleanString(pickSingleValue(searchParams?.atsScore))
+              ? Number(cleanString(pickSingleValue(searchParams?.atsScore)))
+              : null,
+            atsSummary: cleanString(pickSingleValue(searchParams?.atsSummary)),
+            notes: cleanString(pickSingleValue(searchParams?.notes)),
+          },
+          profile.resumeContent
+        )
       : null;
 
-  if (fallbackJob) {
+  const savedJob = await getSavedJobContext(
+    profile.userId,
+    externalJobId,
+    profile.resumeContent
+  );
+  const mergedJob =
+    savedJob || fallbackJob
+      ? buildChatJobSnapshot(
+          {
+            ...(savedJob || {}),
+            ...(fallbackJob || {}),
+          },
+          profile.resumeContent
+        )
+      : null;
+
+  if (mergedJob) {
     return {
       scopeType: CHAT_SCOPE_TYPES.JOB,
-      companyName: fallbackJob.company,
-      job: fallbackJob,
+      companyName: mergedJob.company,
+      job: mergedJob,
       draftPrompt: "",
     };
   }
@@ -413,7 +479,7 @@ async function buildDraftContext(profile, searchParams) {
   return null;
 }
 
-async function getConversationDetails(userId, conversationId) {
+async function getConversationDetails(userId, conversationId, resumeContent = "") {
   if (!conversationId) {
     return null;
   }
@@ -438,11 +504,11 @@ async function getConversationDetails(userId, conversationId) {
     },
   });
 
-  return conversation ? serializeConversation(conversation) : null;
+  return conversation ? serializeConversation(conversation, resumeContent) : null;
 }
 
-function buildConversationList(records) {
-  return records.map((record) => serializeConversation(record));
+function buildConversationList(records, resumeContent = "") {
+  return records.map((record) => serializeConversation(record, resumeContent));
 }
 
 function buildConversationTitle(modeId, draftContext, fallbackMessage) {
@@ -464,7 +530,10 @@ function buildConversationTitle(modeId, draftContext, fallbackMessage) {
 }
 
 function buildPromptContext(profile, conversation, recentMessages) {
-  const metadata = normalizeConversationMetadata(conversation?.metadata);
+  const metadata = normalizeConversationMetadata(
+    conversation?.metadata,
+    profile.resumeContent
+  );
   const activeJob = metadata.job;
 
   return {
@@ -523,7 +592,7 @@ function buildAssistantPrompt(profile, conversation, recentMessages, userMessage
   const contextSnapshot = buildPromptContext(profile, conversation, recentMessages);
 
   return `
-You are Job Genie Copilot, an intelligent career assistant inside a job-search workspace.
+You are Job_Genie, an intelligent career assistant inside a job-search workspace.
 
 Current mode:
 - ${mode.label}: ${mode.description}
@@ -535,6 +604,7 @@ Important behavior rules:
 4. If the user asks what is missing for a role, compare against the active job ATS signals and the user's resume context.
 5. If the user asks for a cover letter or interview prep, tailor the answer to the active company/job when available.
 6. Keep the reply useful and concrete. Mention exact job titles or companies when relevant.
+7. Do not use markdown bold markers, headings, tables, or code fences. Use plain text with short paragraphs and simple dash bullets only when needed.
 
 Allowed action types:
 - ${CHAT_ACTION_TYPES.SAVE_JOB}
@@ -666,19 +736,24 @@ export async function getCareerChatPageData(searchParams) {
   });
 
   let selectedConversation = requestedConversationId
-    ? await getConversationDetails(profile.userId, requestedConversationId)
+    ? await getConversationDetails(
+        profile.userId,
+        requestedConversationId,
+        profile.resumeContent
+      )
     : null;
 
   if (!selectedConversation && !draftContext && conversationList.length > 0) {
     selectedConversation = await getConversationDetails(
       profile.userId,
-      conversationList[0].id
+      conversationList[0].id,
+      profile.resumeContent
     );
   }
 
   return {
     modes: CHAT_MODES,
-    conversations: buildConversationList(conversationList),
+    conversations: buildConversationList(conversationList, profile.resumeContent),
     selectedConversation,
     selectedMode: selectedConversation?.mode || fallbackMode,
     draftContext,
@@ -712,7 +787,7 @@ export async function sendChatMessage(input) {
             cleanString(input.draftContext.scopeType) || CHAT_SCOPE_TYPES.GENERAL,
           companyName: cleanString(input.draftContext.companyName),
           draftPrompt: cleanString(input.draftContext.draftPrompt),
-          job: enrichJobForChat(input.draftContext.job),
+          job: buildChatJobSnapshot(input.draftContext.job, profile.resumeContent),
         }
       : null;
 
@@ -788,7 +863,10 @@ export async function sendChatMessage(input) {
     model: "gemini-2.5-flash",
   });
 
-  const metadata = normalizeConversationMetadata(conversation.metadata);
+  const metadata = normalizeConversationMetadata(
+    conversation.metadata,
+    profile.resumeContent
+  );
   const assistantActions = buildAssistantActions(
     aiResponse?.suggestedActionTypes,
     aiResponse?.suggestedTrackerNote,
@@ -799,7 +877,9 @@ export async function sendChatMessage(input) {
     data: {
       conversationId: conversation.id,
       role: "assistant",
-      content: cleanString(aiResponse?.reply) || "I could not generate a reply.",
+      content:
+        normalizeAssistantReply(aiResponse?.reply) ||
+        "I could not generate a reply.",
       actions: assistantActions,
     },
   });
@@ -833,7 +913,7 @@ export async function sendChatMessage(input) {
   revalidatePath("/career-chat");
 
   return {
-    conversation: serializeConversation(updatedConversation),
+    conversation: serializeConversation(updatedConversation, profile.resumeContent),
   };
 }
 
@@ -850,6 +930,11 @@ export async function syncConversationJobState(input) {
     },
     select: {
       id: true,
+      resume: {
+        select: {
+          content: true,
+        },
+      },
     },
   });
 
@@ -858,7 +943,7 @@ export async function syncConversationJobState(input) {
   }
 
   const conversationId = cleanString(input?.conversationId);
-  const normalizedJob = enrichJobForChat(input?.job);
+  const normalizedJob = buildChatJobSnapshot(input?.job, user.resume?.content || "");
 
   if (!conversationId || !normalizedJob) {
     throw new Error("Conversation id and job are required");
@@ -875,7 +960,10 @@ export async function syncConversationJobState(input) {
     throw new Error("Conversation not found");
   }
 
-  const metadata = normalizeConversationMetadata(conversation.metadata);
+  const metadata = normalizeConversationMetadata(
+    conversation.metadata,
+    user.resume?.content || ""
+  );
 
   await db.chatConversation.update({
     where: {
@@ -897,6 +985,69 @@ export async function syncConversationJobState(input) {
   return {
     conversationId,
     job: normalizedJob,
+  };
+}
+
+export async function clearConversationContext(input) {
+  const { userId } = await auth();
+
+  if (!userId) {
+    throw new Error("Unauthorized");
+  }
+
+  const user = await db.user.findUnique({
+    where: {
+      clerkUserId: userId,
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  const conversationId = cleanString(input?.conversationId);
+
+  if (!conversationId) {
+    throw new Error("Conversation id is required");
+  }
+
+  const conversation = await db.chatConversation.findFirst({
+    where: {
+      id: conversationId,
+      userId: user.id,
+    },
+  });
+
+  if (!conversation) {
+    throw new Error("Conversation not found");
+  }
+
+  const metadata = normalizeConversationMetadata(conversation.metadata);
+
+  await db.chatConversation.update({
+    where: {
+      id: conversationId,
+    },
+    data: {
+      scopeType: CHAT_SCOPE_TYPES.GENERAL,
+      relatedExternalJobId: null,
+      relatedCompanyName: null,
+      metadata: {
+        ...metadata,
+        companyName: "",
+        job: null,
+      },
+    },
+  });
+
+  revalidatePath("/career-chat");
+
+  return {
+    conversationId,
+    scopeType: CHAT_SCOPE_TYPES.GENERAL,
   };
 }
 

@@ -555,6 +555,30 @@ export async function saveJob(jobInput) {
   );
   const title = cleanString(jobInput?.title);
   const companyName = cleanString(jobInput?.company);
+  const description = cleanString(jobInput?.description);
+  const keySkills =
+    Array.isArray(jobInput?.keySkills) && jobInput.keySkills.length > 0
+      ? jobInput.keySkills.filter(Boolean)
+      : extractJobSkills(
+          {
+            title,
+            company: companyName,
+            description,
+          },
+          profile.skills
+        );
+  const ats = buildAtsAnalysis(
+    {
+      title,
+      company: companyName,
+      description,
+      keySkills,
+    },
+    profile.resumeContent
+  );
+  const atsScore =
+    ats.score ?? (typeof jobInput?.atsScore === "number" ? jobInput.atsScore : null);
+  const atsSummary = ats.summary || cleanString(jobInput?.atsSummary) || null;
 
   if (!externalJobId || !title || !companyName) {
     throw new Error("Missing job information");
@@ -580,21 +604,18 @@ export async function saveJob(jobInput) {
         salaryText: cleanString(jobInput?.salary) || null,
         jobType: cleanString(jobInput?.jobType) || null,
         postedAt: cleanString(jobInput?.postedAt) || null,
-        description: cleanString(jobInput?.description) || null,
+        description: description || null,
         matchScore:
           typeof jobInput?.matchScore === "number" ? jobInput.matchScore : null,
         matchLevel: cleanString(jobInput?.matchLevel) || null,
         matchReasons: Array.isArray(jobInput?.matchReasons)
           ? jobInput.matchReasons.filter(Boolean)
           : [],
-        keySkills: Array.isArray(jobInput?.keySkills)
-          ? jobInput.keySkills.filter(Boolean)
-          : [],
+        keySkills,
         status: normalizeJobStatus(jobInput?.status),
         notes: cleanString(jobInput?.notes) || null,
-        atsScore:
-          typeof jobInput?.atsScore === "number" ? jobInput.atsScore : null,
-        atsSummary: cleanString(jobInput?.atsSummary) || null,
+        atsScore,
+        atsSummary,
       },
       create: {
         userId: profile.id,
@@ -610,21 +631,18 @@ export async function saveJob(jobInput) {
         salaryText: cleanString(jobInput?.salary) || null,
         jobType: cleanString(jobInput?.jobType) || null,
         postedAt: cleanString(jobInput?.postedAt) || null,
-        description: cleanString(jobInput?.description) || null,
+        description: description || null,
         matchScore:
           typeof jobInput?.matchScore === "number" ? jobInput.matchScore : null,
         matchLevel: cleanString(jobInput?.matchLevel) || null,
         matchReasons: Array.isArray(jobInput?.matchReasons)
           ? jobInput.matchReasons.filter(Boolean)
           : [],
-        keySkills: Array.isArray(jobInput?.keySkills)
-          ? jobInput.keySkills.filter(Boolean)
-          : [],
+        keySkills,
         status: normalizeJobStatus(jobInput?.status),
         notes: cleanString(jobInput?.notes) || null,
-        atsScore:
-          typeof jobInput?.atsScore === "number" ? jobInput.atsScore : null,
-        atsSummary: cleanString(jobInput?.atsSummary) || null,
+        atsScore,
+        atsSummary,
       },
     });
 

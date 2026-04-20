@@ -3,7 +3,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export default function CareerChatLoading() {
   return (
-    <div className="space-y-6 px-4 md:px-1">
+    <div className="space-y-6 px-4 md:px-1 lg:h-full lg:min-h-0 lg:overflow-hidden">
       <Card className="overflow-hidden border-0 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 text-white shadow-2xl">
         <CardHeader className="space-y-4 pb-4">
           <Skeleton className="h-5 w-52 bg-white/15" />

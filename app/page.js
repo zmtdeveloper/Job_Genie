@@ -1,8 +1,11 @@
+import { auth } from "@clerk/nextjs/server";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ArrowRight } from "lucide-react";
 import HeroSection from "@/components/hero";
+import AuthRequiredModalOpener from "@/components/auth-required-modal-opener";
+import SignInModalButton from "@/components/sign-in-modal-button";
 import {
   Accordion,
   AccordionContent,
@@ -15,13 +18,30 @@ import { testimonial } from "@/data/testimonial";
 import { faqs } from "@/data/faqs";
 import { howItWorks } from "@/data/howItWorks";
 
-export default function LandingPage() {
+export default async function LandingPage({ searchParams }) {
+  const { userId } = await auth();
+  const resolvedSearchParams = await Promise.resolve(searchParams);
+  const showAuthNotice = resolvedSearchParams?.auth === "required";
+  const redirectAfterSignIn =
+    typeof resolvedSearchParams?.from === "string" &&
+    resolvedSearchParams.from.startsWith("/")
+      ? resolvedSearchParams.from
+      : "/dashboard";
+
   return (
     <>
       <div className="grid-background"></div>
+      {showAuthNotice ? (
+        <AuthRequiredModalOpener
+          redirectAfterSignIn={redirectAfterSignIn}
+        />
+      ) : null}
 
       {/* Hero Section */}
-      <HeroSection />
+      <HeroSection
+        isSignedIn={Boolean(userId)}
+        signInRedirectUrl={redirectAfterSignIn}
+      />
 
       {/* Features Section */}
       <section className="w-full py-12 md:py-24 lg:py-32 bg-background">
@@ -188,15 +208,29 @@ export default function LandingPage() {
               Join thousands of professionals who are advancing their careers
               with AI-powered guidance.
             </p>
-            <Link href="/dashboard" passHref>
-              <Button
+            {userId ? (
+              <Link href="/dashboard" passHref>
+                <Button
+                  size="lg"
+                  variant="secondary"
+                  className="h-11 mt-5 animate-bounce"
+                >
+                  Start Your Journey Today{" "}
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </Link>
+            ) : (
+              <SignInModalButton
                 size="lg"
                 variant="secondary"
                 className="h-11 mt-5 animate-bounce"
+                forceRedirectUrl={redirectAfterSignIn}
+                fallbackRedirectUrl={redirectAfterSignIn}
               >
-                Start Your Journey Today <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </Link>
+                Start Your Journey Today{" "}
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </SignInModalButton>
+            )}
           </div>
         </div>
       </section>

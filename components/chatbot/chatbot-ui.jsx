@@ -1,25 +1,27 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
   BadgeCheck,
+  BarChart3,
   Brain,
   BriefcaseBusiness,
   FileText,
   GraduationCap,
-  History,
   Loader2,
-  MessageSquare,
   Plus,
   SendHorizontal,
   Sparkles,
   Target,
   Trash2,
   UserRound,
+  X,
 } from "lucide-react";
 import {
+  clearConversationContext,
   deleteChatConversation,
   sendChatMessage,
   syncConversationJobState,
@@ -30,13 +32,6 @@ import { cn } from "@/lib/utils";
 import useFetch from "@/hooks/use-fetch";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -73,6 +68,72 @@ function formatRelativeTime(value) {
   return `${diffInDays}d ago`;
 }
 
+function isSameCalendarDay(leftDate, rightDate) {
+  return (
+    leftDate.getFullYear() === rightDate.getFullYear() &&
+    leftDate.getMonth() === rightDate.getMonth() &&
+    leftDate.getDate() === rightDate.getDate()
+  );
+}
+
+function getConversationGroupLabel(value) {
+  if (!value) {
+    return "Older";
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "Older";
+  }
+
+  const now = new Date();
+
+  if (isSameCalendarDay(date, now)) {
+    return "Today";
+  }
+
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+
+  if (isSameCalendarDay(date, yesterday)) {
+    return "Yesterday";
+  }
+
+  const todayStart = new Date(now);
+  todayStart.setHours(0, 0, 0, 0);
+  const dateStart = new Date(date);
+  dateStart.setHours(0, 0, 0, 0);
+  const diffInDays = Math.round(
+    (todayStart.getTime() - dateStart.getTime()) / 86400000
+  );
+
+  if (diffInDays < 7) {
+    return "This Week";
+  }
+
+  return "Older";
+}
+
+function groupConversationsByDate(conversations) {
+  const sectionOrder = ["Today", "Yesterday", "This Week", "Older"];
+  const sections = new Map(sectionOrder.map((label) => [label, []]));
+
+  conversations.forEach((conversation) => {
+    const label = getConversationGroupLabel(
+      conversation.lastMessageAt || conversation.updatedAt
+    );
+    sections.get(label).push(conversation);
+  });
+
+  return sectionOrder
+    .map((label) => ({
+      label,
+      items: sections.get(label),
+    }))
+    .filter((section) => section.items.length > 0);
+}
+
 function getConversationKey(conversation) {
   return conversation?.id || "";
 }
@@ -95,7 +156,9 @@ function upsertConversation(conversations, nextConversation) {
 }
 
 function removeConversation(conversations, conversationId) {
-  return conversations.filter((conversation) => conversation.id !== conversationId);
+  return conversations.filter(
+    (conversation) => conversation.id !== conversationId
+  );
 }
 
 function patchConversationJob(conversation, nextJobState) {
@@ -120,33 +183,196 @@ function patchConversationCollection(conversations, conversationId, nextJobState
   );
 }
 
+function clearConversationContextState(conversation) {
+  if (!conversation) {
+    return conversation;
+  }
+
+  return {
+    ...conversation,
+    scopeType: "general",
+    companyName: "",
+    contextJob: null,
+  };
+}
+
+function clearConversationCollection(conversations, conversationId) {
+  return conversations.map((conversation) =>
+    conversation.id === conversationId
+      ? clearConversationContextState(conversation)
+      : conversation
+  );
+}
+
 function findMode(modeId) {
   return CHAT_MODES.find((mode) => mode.id === modeId) || CHAT_MODES[0];
+}
+
+function buildScopedDraftContext(activeContextJob, activeContextCompany, scopeType) {
+  if (activeContextJob) {
+    return {
+      scopeType: "job",
+      companyName: activeContextJob.company,
+      job: activeContextJob,
+      draftPrompt: "",
+    };
+  }
+
+  if (activeContextCompany) {
+    return {
+      scopeType: scopeType && scopeType !== "general" ? scopeType : "company",
+      companyName: activeContextCompany,
+      job: null,
+      draftPrompt: "",
+    };
+  }
+
+  return null;
+}
+
+function normalizeMessageText(content) {
+  return String(content || "")
+    .replace(/\r\n/g, "\n")
+    .replace(/\*\*(.*?)\*\*/g, "$1")
+    .replace(/__(.*?)__/g, "$1")
+    .replace(/`{1,3}([^`]+?)`{1,3}/g, "$1")
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, "$1")
+    .replace(/^#{1,6}\s*/gm, "")
+    .replace(/^\s*>\s?/gm, "")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+function stripListMarker(line) {
+  return line
+    .replace(/^[-*•]\s+/, "")
+    .replace(/^\d+[.)]\s+/, "")
+    .trim();
+}
+
+function parseMessageBlocks(content) {
+  const normalizedContent = normalizeMessageText(content);
+
+  if (!normalizedContent) {
+    return [];
+  }
+
+  return normalizedContent
+    .split(/\n{2,}/)
+    .map((block) => block.trim())
+    .filter(Boolean)
+    .map((block) => {
+      const lines = block
+        .split("\n")
+        .map((line) => line.trim())
+        .filter(Boolean);
+
+      if (lines.length > 0 && lines.every((line) => /^[-*•]\s+/.test(line))) {
+        return {
+          type: "unordered-list",
+          items: lines.map(stripListMarker),
+        };
+      }
+
+      if (lines.length > 0 && lines.every((line) => /^\d+[.)]\s+/.test(line))) {
+        return {
+          type: "ordered-list",
+          items: lines.map(stripListMarker),
+        };
+      }
+
+      return {
+        type: "paragraph",
+        lines,
+      };
+    });
+}
+
+function MessageContent({ content, isAssistant }) {
+  const blocks = useMemo(() => parseMessageBlocks(content), [content]);
+  const textClassName = isAssistant ? "text-foreground/90" : "text-white/90";
+
+  if (blocks.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="space-y-3">
+      {blocks.map((block, blockIndex) => {
+        if (block.type === "unordered-list") {
+          return (
+            <ul
+              key={`ul-${blockIndex}`}
+              className={cn(
+                "list-disc space-y-2 pl-5 text-[15px] leading-7 marker:text-muted-foreground",
+                textClassName
+              )}
+            >
+              {block.items.map((item, itemIndex) => (
+                <li key={`ul-item-${blockIndex}-${itemIndex}`}>{item}</li>
+              ))}
+            </ul>
+          );
+        }
+
+        if (block.type === "ordered-list") {
+          return (
+            <ol
+              key={`ol-${blockIndex}`}
+              className={cn(
+                "list-decimal space-y-2 pl-5 text-[15px] leading-7 marker:text-muted-foreground",
+                textClassName
+              )}
+            >
+              {block.items.map((item, itemIndex) => (
+                <li key={`ol-item-${blockIndex}-${itemIndex}`}>{item}</li>
+              ))}
+            </ol>
+          );
+        }
+
+        return (
+          <p
+            key={`p-${blockIndex}`}
+            className={cn("text-[15px] leading-7", textClassName)}
+          >
+            {block.lines.map((line, lineIndex) => (
+              <span key={`line-${blockIndex}-${lineIndex}`}>
+                {line}
+                {lineIndex < block.lines.length - 1 ? <br /> : null}
+              </span>
+            ))}
+          </p>
+        );
+      })}
+    </div>
+  );
 }
 
 function MessageBubble({ message, onAction }) {
   const isAssistant = message.role === "assistant";
 
   return (
-    <div
-      className={cn(
-        "flex",
-        isAssistant ? "justify-start" : "justify-end"
-      )}
-    >
+    <div className={cn("flex w-full", isAssistant ? "justify-start" : "justify-end")}>
       <div
         className={cn(
-          "max-w-[85%] rounded-2xl border px-4 py-3 shadow-sm",
+          "max-w-3xl rounded-[24px] border px-5 py-4 shadow-[0_20px_60px_-40px_rgba(0,0,0,0.8)]",
           isAssistant
-            ? "border-border/70 bg-card"
-            : "border-slate-900 bg-slate-950 text-white"
+            ? "border-border/70 bg-card/95 backdrop-blur"
+            : "border-slate-800 bg-slate-950 text-white"
         )}
       >
-        <div className="mb-2 flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-muted-foreground">
+        <div
+          className={cn(
+            "mb-3 flex items-center gap-2 text-[11px] uppercase tracking-[0.24em]",
+            isAssistant ? "text-muted-foreground" : "text-white/70"
+          )}
+        >
           {isAssistant ? (
             <>
               <Sparkles className="h-3.5 w-3.5" />
-              Copilot
+              Job_Genie
             </>
           ) : (
             <>
@@ -154,15 +380,28 @@ function MessageBubble({ message, onAction }) {
               You
             </>
           )}
+          {message.createdAt ? (
+            <span className="ml-1 text-[10px] normal-case tracking-normal opacity-80">
+              {formatRelativeTime(message.createdAt)}
+            </span>
+          ) : null}
         </div>
 
-        <p className="whitespace-pre-wrap text-sm leading-6">{message.content}</p>
+        <MessageContent content={message.content} isAssistant={isAssistant} />
 
-        {isAssistant && Array.isArray(message.actions) && message.actions.length > 0 ? (
+        {isAssistant &&
+        Array.isArray(message.actions) &&
+        message.actions.length > 0 ? (
           <div className="mt-4 flex flex-wrap gap-2">
             {message.actions.map((action, index) =>
               action.href ? (
-                <Button key={`${action.type}-${index}`} size="sm" variant="outline" asChild>
+                <Button
+                  key={`${action.type}-${index}`}
+                  size="sm"
+                  variant="outline"
+                  className="rounded-full"
+                  asChild
+                >
                   <Link href={action.href}>{action.label}</Link>
                 </Button>
               ) : (
@@ -170,6 +409,7 @@ function MessageBubble({ message, onAction }) {
                   key={`${action.type}-${index}`}
                   size="sm"
                   variant="outline"
+                  className="rounded-full"
                   onClick={() => onAction(action)}
                 >
                   {action.label}
@@ -178,6 +418,19 @@ function MessageBubble({ message, onAction }) {
             )}
           </div>
         ) : null}
+      </div>
+    </div>
+  );
+}
+
+function MiniStat({ label, value }) {
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-[24px] border border-border/70 bg-background/70 px-4 py-3">
+      <p className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">
+        {label}
+      </p>
+      <div className="rounded-full border border-sky-400/18 bg-sky-500/10 px-3 py-1 text-sm font-semibold text-sky-100 shadow-[0_10px_22px_-18px_rgba(37,99,235,0.85)]">
+        {value}
       </div>
     </div>
   );
@@ -193,16 +446,22 @@ export default function ChatbotUI({
   topSavedJobs,
   latestAssessment,
 }) {
+  const router = useRouter();
   const [conversations, setConversations] = useState(initialConversations);
   const [activeConversation, setActiveConversation] = useState(initialConversation);
-  const [activeMode, setActiveMode] = useState(initialConversation?.mode || initialMode);
+  const [activeMode, setActiveMode] = useState(
+    initialConversation?.mode || initialMode
+  );
   const [draftState, setDraftState] = useState(draftContext);
   const [input, setInput] = useState("");
   const messageEndRef = useRef(null);
+  const textareaRef = useRef(null);
 
   const { loading: sendingMessage, fn: sendMessageFn } = useFetch(sendChatMessage);
   const { loading: deletingConversation, fn: deleteConversationFn } =
     useFetch(deleteChatConversation);
+  const { loading: clearingContext, fn: clearConversationContextFn } =
+    useFetch(clearConversationContext);
   const { fn: syncConversationJobStateFn } = useFetch(syncConversationJobState);
   const { loading: savingJob, fn: saveJobFn } = useFetch(saveJob);
   const { loading: updatingJob, fn: updateSavedJobFn } = useFetch(updateSavedJob);
@@ -215,37 +474,128 @@ export default function ChatbotUI({
   const isActionLoading = Boolean(savingJob || updatingJob);
   const isDeletingActiveConversation =
     deletingConversation && Boolean(activeConversation?.id);
+  const isClearingActiveContext =
+    clearingContext && Boolean(activeContextJob || activeContextCompany);
+  const composerMinHeight = 37;
+  const composerMaxHeight = 137;
 
   useEffect(() => {
     messageEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [activeMessages.length, sendingMessage]);
 
-  const sessionStats = useMemo(
-    () => ({
-      totalSessions: conversations.length,
-      trackedJobs: trackerSummary.total || 0,
-      resumeScore: profileSummary.resumeScore || 0,
-    }),
-    [conversations.length, profileSummary.resumeScore, trackerSummary.total]
+  useEffect(() => {
+    const textareaElement = textareaRef.current;
+
+    if (!textareaElement) {
+      return;
+    }
+
+    textareaElement.style.height = "0px";
+    const nextHeight = Math.min(
+      Math.max(textareaElement.scrollHeight, composerMinHeight),
+      composerMaxHeight
+    );
+
+    textareaElement.style.height = `${nextHeight}px`;
+    textareaElement.style.overflowY =
+      textareaElement.scrollHeight > composerMaxHeight ? "auto" : "hidden";
+  }, [composerMaxHeight, composerMinHeight, input]);
+
+  const focusComposer = () => {
+    window.requestAnimationFrame(() => {
+      textareaRef.current?.focus();
+    });
+  };
+
+  const currentScopedDraft = useMemo(
+    () =>
+      buildScopedDraftContext(
+        activeContextJob,
+        activeContextCompany,
+        activeConversation?.scopeType || draftState?.scopeType || "general"
+      ),
+    [
+      activeContextCompany,
+      activeContextJob,
+      activeConversation?.scopeType,
+      draftState?.scopeType,
+    ]
   );
+
+  const conversationGroups = useMemo(
+    () => groupConversationsByDate(sortConversations(conversations)),
+    [conversations]
+  );
+
+  const suggestedPrompts = useMemo(() => {
+    const prompts = [...activeModeConfig.emptyPrompts];
+
+    if (activeContextJob?.title) {
+      prompts.unshift(
+        `What is missing from my resume for ${activeContextJob.title}?`,
+        `Write a short cover letter angle for ${activeContextJob.company}.`,
+        `What interview questions should I expect for ${activeContextJob.title}?`
+      );
+    } else if (activeContextCompany) {
+      prompts.unshift(`How should I position myself for ${activeContextCompany}?`);
+    }
+
+    return [...new Set(prompts)].slice(0, 3);
+  }, [activeContextCompany, activeContextJob, activeModeConfig.emptyPrompts]);
+
+  const panelTitle =
+    activeConversation?.title || `New ${activeModeConfig.label} chat`;
+  const panelDescription = activeConversation
+    ? `${activeMessages.length} ${
+        activeMessages.length === 1 ? "message" : "messages"
+      } in this memory-backed session.`
+    : activeContextJob
+      ? `Focused on ${activeContextJob.title} at ${activeContextJob.company}. Ask directly and take action from the reply.`
+      : activeContextCompany
+        ? `Company context is loaded for ${activeContextCompany}.`
+        : "Start a focused conversation. Your profile, resume, tracker, and saved jobs are already in context.";
+  const showPromptCards =
+    activeMessages.length === 0 && !sendingMessage && !input.trim();
+  const profileSignalValue =
+    typeof activeContextJob?.atsScore === "number"
+      ? Math.round(activeContextJob.atsScore)
+      : typeof profileSummary.resumeScore === "number"
+        ? Math.round(profileSummary.resumeScore)
+        : 0;
+  const profileSignalLabel =
+    typeof activeContextJob?.atsScore === "number"
+      ? profileSignalValue
+      : profileSummary.hasResume
+        ? profileSummary.resumeScore || "Ready"
+        : "Missing";
+  const profileSignalTitle =
+    typeof activeContextJob?.atsScore === "number"
+      ? "Current ATS signal"
+      : "Resume signal";
 
   const startDraftConversation = (nextMode, nextDraftContext = null) => {
     setActiveConversation(null);
     setActiveMode(nextMode);
     setDraftState(nextDraftContext);
     setInput("");
+    focusComposer();
+  };
+
+  const handleModeSwitch = (modeId) => {
+    startDraftConversation(modeId, currentScopedDraft);
   };
 
   const handleSelectConversation = (conversation) => {
     setActiveConversation(conversation);
     setActiveMode(conversation.mode);
     setDraftState(null);
+    focusComposer();
   };
 
   const handleSendMessage = async () => {
     const normalizedInput = input.trim();
 
-    if (!normalizedInput) {
+    if (!normalizedInput || sendingMessage) {
       return;
     }
 
@@ -271,6 +621,32 @@ export default function ChatbotUI({
 
   const handleQuickPrompt = (prompt) => {
     setInput(prompt);
+    focusComposer();
+  };
+
+  const handleClearContext = async () => {
+    if (activeConversation?.id) {
+      const response = await clearConversationContextFn({
+        conversationId: activeConversation.id,
+      });
+
+      if (!response?.conversationId) {
+        return;
+      }
+
+      setActiveConversation((currentConversation) =>
+        clearConversationContextState(currentConversation)
+      );
+      setConversations((currentConversations) =>
+        clearConversationCollection(currentConversations, response.conversationId)
+      );
+      toast.success("Role context removed");
+      return;
+    }
+
+    setDraftState(null);
+    router.replace("/career-chat");
+    toast.success("Role context removed");
   };
 
   const handleDeleteConversation = async (conversationId) => {
@@ -440,108 +816,62 @@ export default function ChatbotUI({
     }
   };
 
+  const handleComposerKeyDown = (event) => {
+    if (
+      event.key === "Enter" &&
+      !event.shiftKey &&
+      !event.nativeEvent.isComposing
+    ) {
+      event.preventDefault();
+      void handleSendMessage();
+    }
+  };
+
   return (
-    <div className="space-y-6 px-4 md:px-1">
-      <Card className="overflow-hidden border-0 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-700 text-white shadow-2xl">
-        <CardHeader className="space-y-3 pb-5">
-          <div className="flex flex-wrap gap-2">
-            <Badge className="bg-white/10 px-3 text-white hover:bg-white/10">
-              Context-aware career copilot
-            </Badge>
-          </div>
+    <div className="relative h-full px-4 md:px-1 lg:overflow-hidden">
+      <div className="absolute inset-x-0 top-0 -z-10 h-72 rounded-[36px] bg-[radial-gradient(circle_at_top,_rgba(148,163,184,0.18),transparent_55%),radial-gradient(circle_at_20%_10%,rgba(14,165,233,0.16),transparent_30%),radial-gradient(circle_at_80%_15%,rgba(244,114,182,0.12),transparent_35%)] blur-3xl" />
 
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-            <div className="space-y-3">
-              <h1 className="text-4xl font-bold tracking-tight md:text-5xl">
-                Chat With Context & Take Action.
-              </h1>
-              <p className="max-w-2xl text-sm text-slate-300 md:text-base">
-                Profile, resume, saved jobs, ATS signals, and tracker history all stay in the loop so the assistant can guide your next move.
-              </p>
+      <div
+        className="grid gap-4 lg:h-full lg:min-h-0 xl:grid-cols-[300px_minmax(0,1fr)_320px]"
+      >
+        <aside className="flex min-h-[360px] flex-col overflow-hidden rounded-[24px] border border-border/70 bg-card/90 shadow-[0_30px_80px_-45px_rgba(0,0,0,0.9)] backdrop-blur xl:min-h-0 xl:h-full">
+          <div className="border-b border-border/60 p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">
+                  Chats
+                </p>
+                <h2 className="mt-1 text-xl font-semibold">Recent Conversations</h2>
+              </div>
+
+              <Button
+                type="button"
+                size="icon"
+                className="h-10 w-10 rounded-full"
+                onClick={() => startDraftConversation(activeMode, currentScopedDraft)}
+                aria-label="Start new chat"
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
             </div>
 
-            <Button
-              variant="secondary"
-              onClick={() => startDraftConversation(activeMode, null)}
-              className="h-10 bg-white text-slate-950 hover:bg-white/90"
-            >
-              <Plus className="h-4 w-4" />
-              New Chat
-            </Button>
-          </div>
-        </CardHeader>
-
-        <CardContent>
-          <div className="grid gap-3 md:grid-cols-3">
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-              <p className="text-xs uppercase tracking-[0.24em] text-slate-300">
-                Active Mode
-              </p>
-              <p className="mt-2 text-xl font-semibold">{activeModeConfig.label}</p>
-              <p className="mt-2 text-sm text-slate-300">
-                {activeModeConfig.description}
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-              <p className="text-xs uppercase tracking-[0.24em] text-slate-300">
-                Sessions
-              </p>
-              <p className="mt-2 text-xl font-semibold">{sessionStats.totalSessions}</p>
-              <p className="mt-2 text-sm text-slate-300">
-                {sessionStats.trackedJobs} tracked roles and memory-backed conversations
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-              <p className="text-xs uppercase tracking-[0.24em] text-slate-300">
-                Resume Signal
-              </p>
-              <p className="mt-2 text-xl font-semibold">
-                {profileSummary.hasResume ? profileSummary.resumeScore || "Ready" : "Missing"}
-              </p>
-              <p className="mt-2 text-sm text-slate-300">
-                {profileSummary.hasResume
-                  ? "Resume context is available for ATS and positioning advice."
-                  : "Add a resume to unlock sharper ATS and job-fit guidance."}
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <div className="grid gap-5 xl:grid-cols-[300px_minmax(0,1fr)_320px]">
-        <Card className="border border-border/70 shadow-xl">
-          <CardHeader className="border-b bg-muted/20">
-            <CardTitle className="flex items-center gap-2 text-xl">
-              <History className="h-5 w-5" />
-              Saved Chats
-            </CardTitle>
-            <CardDescription>
-              General, job-specific, company-specific, and interview sessions.
-            </CardDescription>
-          </CardHeader>
-
-          <CardContent className="space-y-4 p-4">
-            <div className="flex flex-wrap gap-2">
+            <div className="mt-4 rounded-[24px] border border-sky-400/18 bg-[radial-gradient(circle_at_top,rgba(37,99,235,0.18),transparent_62%),linear-gradient(180deg,rgba(10,16,30,0.74),rgba(8,12,24,0.58))] p-3 shadow-[0_0_0_1px_rgba(56,189,248,0.06),0_24px_50px_-34px_rgba(37,99,235,0.95),0_10px_26px_-18px_rgba(14,165,233,0.5)]">
+              <div className="flex flex-wrap gap-2">
               {CHAT_MODES.map((mode) => {
                 const Icon = MODE_ICONS[mode.id] || Sparkles;
+                const isSelectedMode =
+                  (activeConversation?.mode || activeMode) === mode.id;
 
                 return (
                   <button
                     key={mode.id}
                     type="button"
-                    onClick={() =>
-                      startDraftConversation(
-                        mode.id,
-                        draftState && mode.id === activeMode ? draftState : null
-                      )
-                    }
+                    onClick={() => handleModeSwitch(mode.id)}
                     className={cn(
-                      "inline-flex items-center gap-2 rounded-full border px-3 py-2 text-sm transition-all",
-                      (activeConversation?.mode || activeMode) === mode.id
-                        ? "border-slate-900 bg-slate-950 text-white"
-                        : "border-border/70 bg-background hover:bg-accent"
+                      "inline-flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-sm font-medium transition-all",
+                      isSelectedMode
+                        ? "border-sky-400/30 bg-[linear-gradient(180deg,rgba(12,23,50,0.98),rgba(10,18,39,0.92))] text-white shadow-[0_18px_36px_-24px_rgba(37,99,235,0.85)]"
+                        : "border-white/10 bg-white/[0.03] text-foreground/88 hover:border-sky-400/16 hover:bg-sky-500/8 hover:text-white"
                     )}
                   >
                     <Icon className="h-4 w-4" />
@@ -549,370 +879,584 @@ export default function ChatbotUI({
                   </button>
                 );
               })}
+              </div>
+            </div>
+          </div>
+
+          <div className="min-h-0 flex-1 overflow-y-auto px-3 py-4">
+            {conversationGroups.length > 0 ? (
+              conversationGroups.map((section) => (
+                <div key={section.label} className="mb-5 last:mb-0">
+                  <p className="px-2 text-[11px] uppercase tracking-[0.24em] text-muted-foreground">
+                    {section.label}
+                  </p>
+
+                  <div className="mt-3 space-y-3">
+                    {section.items.map((conversation) => (
+                      <div
+                        key={conversation.id}
+                        className={cn(
+                          "rounded-[24px] border p-4 transition-all",
+                          getConversationKey(activeConversation) === conversation.id
+                            ? "border-slate-900 bg-slate-950 text-white shadow-[0_22px_70px_-50px_rgba(15,23,42,1)]"
+                            : "border-border/70 bg-background/70 shadow-sm hover:-translate-y-0.5 hover:shadow-lg"
+                        )}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <button
+                            type="button"
+                            onClick={() => handleSelectConversation(conversation)}
+                            className="min-w-0 flex-1 text-left"
+                          >
+                            <div className="flex flex-wrap gap-2">
+                              <Badge
+                                variant="outline"
+                                className={cn(
+                                  getConversationKey(activeConversation) ===
+                                    conversation.id && "border-white/20 text-white"
+                                )}
+                              >
+                                {findMode(conversation.mode).label}
+                              </Badge>
+                              {conversation.scopeType !== "general" ? (
+                                <Badge
+                                  variant="outline"
+                                  className={cn(
+                                    getConversationKey(activeConversation) ===
+                                      conversation.id && "border-white/20 text-white"
+                                  )}
+                                >
+                                  {conversation.scopeType}
+                                </Badge>
+                              ) : null}
+                            </div>
+
+                            <p className="mt-3 text-sm font-semibold">
+                              {conversation.title}
+                            </p>
+                          </button>
+
+                          <div className="flex flex-col items-end gap-2">
+                            <span
+                              className={cn(
+                                "text-[11px]",
+                                getConversationKey(activeConversation) ===
+                                  conversation.id
+                                  ? "text-white/55"
+                                  : "text-muted-foreground"
+                              )}
+                            >
+                              {formatRelativeTime(
+                                conversation.lastMessageAt || conversation.updatedAt
+                              )}
+                            </span>
+
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDeleteConversation(conversation.id)}
+                              disabled={deletingConversation}
+                              className={cn(
+                                "h-8 w-8 rounded-full",
+                                getConversationKey(activeConversation) ===
+                                  conversation.id
+                                  ? "text-white/70 hover:bg-white/10 hover:text-white"
+                                  : "text-muted-foreground hover:text-destructive"
+                              )}
+                              aria-label={`Delete ${conversation.title}`}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="rounded-[24px] border border-dashed border-border/70 bg-background/60 p-5 text-sm text-muted-foreground">
+                Start your first conversation. Your saved sessions will appear here.
+              </div>
+            )}
+          </div>
+        </aside>
+
+        <section className="flex min-h-[520px] flex-col overflow-hidden rounded-[24px] border border-border/70 bg-card/90 shadow-[0_30px_90px_-45px_rgba(0,0,0,0.95)] backdrop-blur xl:min-h-0 xl:h-full">
+          <div className="relative mx-3 mt-3 overflow-hidden rounded-[24px] border border-sky-500/12 bg-[radial-gradient(circle_at_top_left,rgba(37,99,235,0.22),transparent_36%),radial-gradient(circle_at_top_right,rgba(14,165,233,0.16),transparent_34%),linear-gradient(180deg,rgba(10,14,26,0.98),rgba(9,13,24,0.94))] px-4 pb-3 pt-4 shadow-[inset_0_-1px_0_rgba(148,163,184,0.08)] md:px-6">
+            <div className="pointer-events-none absolute inset-x-16 top-0 h-20 rounded-full bg-[radial-gradient(circle,rgba(56,189,248,0.16),transparent_68%)] blur-3xl" />
+            <div className="flex flex-col gap-2">
+              <div className="space-y-2">
+                <Badge
+                  variant="outline"
+                  className="w-fit rounded-full border-sky-400/25 bg-sky-500/10 px-2.5 py-0.5 text-sky-100 shadow-[0_12px_28px_-18px_rgba(37,99,235,0.85)]"
+                >
+                  Job Genie&apos;s advanced personalized chatbot
+                </Badge>
+                <div>
+                  <h2 className="text-2xl font-semibold tracking-tight md:text-[2rem]">
+                    {panelTitle}
+                  </h2>
+                  <p className="mt-1.5 max-w-3xl text-sm text-muted-foreground">
+                    {panelDescription}
+                  </p>
+                </div>
+              </div>
             </div>
 
-            <div className="max-h-[680px] space-y-3 overflow-y-auto pr-1">
-              {conversations.length > 0 ? (
-                conversations.map((conversation) => (
-                  <div
-                    key={conversation.id}
-                    className={cn(
-                      "rounded-2xl border p-4 transition-all",
-                      getConversationKey(activeConversation) === conversation.id
-                        ? "border-slate-900 bg-slate-950/5 shadow-lg"
-                        : "border-border/70 bg-card shadow-sm hover:-translate-y-0.5 hover:shadow-lg"
-                    )}
-                  >
-                    <div className="flex items-start justify-between gap-3">
+            {activeContextJob ? (
+              <div className="mt-3 rounded-[24px] border border-sky-400/12 bg-[linear-gradient(180deg,rgba(10,16,30,0.86),rgba(8,12,24,0.76))] p-3.5 shadow-[0_20px_40px_-34px_rgba(14,165,233,0.8)] backdrop-blur">
+                <div className="space-y-2.5">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">
+                      Active role context
+                    </p>
+                    <div className="flex flex-wrap items-center gap-2">
+                      {activeContextJob.matchScore != null ? (
+                        <Badge
+                          variant="secondary"
+                          className="border border-sky-400/12 bg-sky-500/10 text-sky-50"
+                        >
+                          Match {activeContextJob.matchScore}
+                        </Badge>
+                      ) : null}
+                      {activeContextJob.atsScore != null ? (
+                        <Badge
+                          variant="outline"
+                          className="border-sky-400/22 bg-background/40 text-sky-100"
+                        >
+                          ATS {activeContextJob.atsScore}
+                        </Badge>
+                      ) : null}
+                      {activeContextJob.status ? (
+                        <Badge
+                          variant="outline"
+                          className="border-white/10 bg-white/[0.03] text-foreground/88"
+                        >
+                          {activeContextJob.status}
+                        </Badge>
+                      ) : null}
+                      <Badge
+                        variant="outline"
+                        className="cursor-pointer border-white/10 bg-white/[0.03] text-foreground/88 transition-colors hover:bg-white/[0.08] hover:text-white"
+                        asChild
+                      >
+                        <button
+                          type="button"
+                          onClick={() => void handleClearContext()}
+                          disabled={isClearingActiveContext}
+                          className="inline-flex items-center gap-1.5"
+                        >
+                          Remove context
+                        </button>
+                      </Badge>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
+                    <span className="font-semibold text-foreground">
+                      {activeContextJob.title}
+                    </span>
+                    <span>at {activeContextJob.company}</span>
+                    {activeContextJob.location ? (
+                      <span>{activeContextJob.location}</span>
+                    ) : null}
+                  </div>
+                </div>
+              </div>
+            ) : activeContextCompany ? (
+              <div className="mt-3 rounded-[24px] border border-sky-400/12 bg-[linear-gradient(180deg,rgba(10,16,30,0.86),rgba(8,12,24,0.76))] p-3.5 shadow-[0_20px_40px_-34px_rgba(14,165,233,0.8)] backdrop-blur">
+                <div className="flex flex-col gap-2.5">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">
+                      Active company context
+                    </p>
+                    <Badge
+                      variant="outline"
+                      className="cursor-pointer border-white/10 bg-white/[0.03] text-foreground/88 transition-colors hover:bg-white/[0.08] hover:text-white"
+                      asChild
+                    >
                       <button
                         type="button"
-                        onClick={() => handleSelectConversation(conversation)}
-                        className="flex-1 text-left"
+                        onClick={() => void handleClearContext()}
+                        disabled={isClearingActiveContext}
+                        className="inline-flex items-center gap-1.5"
                       >
-                        <div className="space-y-2">
-                          <div className="flex flex-wrap gap-2">
-                            <Badge variant="outline">{findMode(conversation.mode).label}</Badge>
-                            <Badge variant="outline">{conversation.scopeType}</Badge>
-                          </div>
-                          <p className="text-sm font-semibold">{conversation.title}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {conversation.lastMessagePreview || "No messages yet"}
-                          </p>
-                        </div>
+                        Remove context
                       </button>
+                    </Badge>
+                  </div>
+                  <p className="text-sm font-semibold text-sky-50">
+                    {activeContextCompany}
+                  </p>
+                </div>
+              </div>
+            ) : null}
+          </div>
 
-                      <div className="flex flex-col items-end gap-2">
-                        <span className="text-xs text-muted-foreground">
-                          {formatRelativeTime(
-                            conversation.lastMessageAt || conversation.updatedAt
-                          )}
-                        </span>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDeleteConversation(conversation.id)}
-                          disabled={deletingConversation}
-                          className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                          aria-label={`Delete ${conversation.title}`}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+          <div className="flex min-h-0 flex-1 flex-col pt-1">
+            <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 md:px-6">
+              <div className="space-y-4">
+                {activeMessages.length > 0 ? (
+                  activeMessages.map((message) => (
+                    <MessageBubble
+                      key={message.id}
+                      message={message}
+                      onAction={handleChatAction}
+                    />
+                  ))
+                ) : null}
+
+                {sendingMessage ? (
+                  <div className="flex justify-start">
+                    <div className="rounded-[24px] border border-border/70 bg-card px-4 py-3 text-sm text-muted-foreground">
+                      <div className="flex items-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Job_Genie is shaping a response...
                       </div>
                     </div>
                   </div>
-                ))
-              ) : (
-                <div className="rounded-2xl border border-dashed p-4 text-sm text-muted-foreground">
-                  Start your first conversation. The assistant will remember it here.
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+                ) : null}
 
-        <Card className="border border-border/70 shadow-xl">
-          <CardHeader className="space-y-4 border-b bg-muted/20">
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-              <div>
-                <CardTitle className="text-2xl gradient-title md:text-3xl">
-                  {activeConversation?.title || activeModeConfig.label}
-                </CardTitle>
-                <CardDescription className="mt-2">
-                  {activeConversation
-                    ? "Conversation memory stays attached to this session."
-                    : "Start a fresh conversation with the mode and context you need."}
-                </CardDescription>
+                <div ref={messageEndRef} />
               </div>
-
-              <Badge variant="outline" className="w-fit">
-                {activeConversation?.scopeType || draftState?.scopeType || "general"}
-              </Badge>
             </div>
 
-            {activeConversation ? (
-              <div className="flex justify-end">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleDeleteConversation(activeConversation.id)}
-                  disabled={deletingConversation}
-                  className="text-muted-foreground hover:text-destructive"
-                >
-                  <Trash2 className="h-4 w-4" />
-                  Delete Chat
-                </Button>
-              </div>
-            ) : null}
-
-            {activeContextJob ? (
-              <div className="rounded-2xl border bg-background p-4">
-                <p className="text-xs uppercase tracking-[0.24em] text-muted-foreground">
-                  Role Context Loaded
-                </p>
-                <p className="mt-2 text-lg font-semibold">
-                  {activeContextJob.title}
-                </p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {activeContextJob.company}
-                  {activeContextJob.location ? ` • ${activeContextJob.location}` : ""}
-                </p>
-              </div>
-            ) : activeContextCompany ? (
-              <div className="rounded-2xl border bg-background p-4">
-                <p className="text-xs uppercase tracking-[0.24em] text-muted-foreground">
-                  Company Context Loaded
-                </p>
-                <p className="mt-2 text-lg font-semibold">{activeContextCompany}</p>
-              </div>
-            ) : null}
-          </CardHeader>
-
-          <CardContent className="space-y-4 p-4">
-            <div className="max-h-[620px] space-y-4 overflow-y-auto pr-1">
-              {activeMessages.length > 0 ? (
-                activeMessages.map((message) => (
-                  <MessageBubble
-                    key={message.id}
-                    message={message}
-                    onAction={handleChatAction}
-                  />
-                ))
-              ) : (
-                <Card className="border-dashed shadow-none">
-                  <CardHeader>
-                    <CardTitle className="text-xl">Smart prompts to start fast</CardTitle>
-                    <CardDescription>
-                      The assistant already knows your profile context. Pick a prompt or type your own.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="flex flex-wrap gap-2">
-                    {activeModeConfig.emptyPrompts.map((prompt) => (
-                      <Button
+            <div className="border-t border-border/60 bg-background/95 px-4 py-2.5 backdrop-blur md:px-6">
+              {showPromptCards ? (
+                <div className="mb-2 -translate-y-1 flex justify-center">
+                  <div className="grid w-full max-w-3xl gap-2 md:grid-cols-3">
+                    {suggestedPrompts.map((prompt) => (
+                      <button
                         key={prompt}
-                        variant="outline"
+                        type="button"
                         onClick={() => handleQuickPrompt(prompt)}
+                        className="min-h-[66px] rounded-[24px] border border-sky-400/18 bg-[radial-gradient(circle_at_top,rgba(37,99,235,0.16),transparent_62%),linear-gradient(180deg,rgba(10,14,25,0.96),rgba(8,12,22,0.88))] px-3.5 py-2.5 text-left text-[13px] font-semibold leading-5 text-foreground/95 shadow-[0_18px_36px_-28px_rgba(37,99,235,0.9),0_8px_22px_-18px_rgba(14,165,233,0.5)] transition-all hover:-translate-y-0.5 hover:border-sky-300/28 hover:bg-[radial-gradient(circle_at_top,rgba(37,99,235,0.22),transparent_60%),linear-gradient(180deg,rgba(12,18,34,0.98),rgba(9,14,28,0.92))] hover:text-white"
                       >
                         {prompt}
-                      </Button>
+                      </button>
                     ))}
-                  </CardContent>
-                </Card>
-              )}
-
-              {sendingMessage ? (
-                <div className="flex justify-start">
-                  <div className="rounded-2xl border bg-card px-4 py-3 text-sm text-muted-foreground">
-                    <div className="flex items-center gap-2">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Copilot is thinking...
-                    </div>
                   </div>
                 </div>
               ) : null}
 
-              <div ref={messageEndRef} />
-            </div>
+              <div className="relative -translate-y-1 rounded-[24px] border border-sky-400/35 bg-[radial-gradient(circle_at_top,rgba(37,99,235,0.24),transparent_52%),linear-gradient(180deg,rgba(9,14,28,0.99),rgba(8,12,22,0.94))] px-2.5 py-1.5 shadow-[0_0_0_1px_rgba(56,189,248,0.08),0_28px_65px_-34px_rgba(37,99,235,1),0_16px_38px_-20px_rgba(14,165,233,0.75),inset_0_1px_0_rgba(255,255,255,0.08)]">
+                {activeContextJob ? (
+                  <div className="mb-2 flex flex-wrap gap-2">
+                    <Badge variant="secondary" className="rounded-full">
+                      Talking about {activeContextJob.title}
+                    </Badge>
+                    <Badge variant="outline" className="rounded-full">
+                      {activeContextJob.company}
+                    </Badge>
+                  </div>
+                ) : activeContextCompany ? (
+                  <div className="mb-2 flex flex-wrap gap-2">
+                    <Badge variant="secondary" className="rounded-full">
+                      Company context: {activeContextCompany}
+                    </Badge>
+                  </div>
+                ) : null}
 
-            <div className="rounded-2xl border bg-background p-3">
-              <Textarea
-                value={input}
-                onChange={(event) => setInput(event.target.value)}
-                placeholder="Ask about your saved jobs, resume gaps, ATS match, cover letters, or interview prep..."
-                className="min-h-28 resize-none border-0 bg-transparent p-0 shadow-none focus-visible:ring-0"
-              />
+                <div className="flex items-center gap-2">
+                  <Textarea
+                    ref={textareaRef}
+                    rows={1}
+                    value={input}
+                    onChange={(event) => setInput(event.target.value)}
+                    onKeyDown={handleComposerKeyDown}
+                    placeholder="Ask about resume gaps, saved jobs, ATS fit, cover letters, or interview prep..."
+                    className="min-h-0 flex-1 resize-none border-0 bg-transparent py-[6px] text-sm leading-5 placeholder:font-medium placeholder:text-muted-foreground/90 shadow-none focus-visible:ring-0"
+                  />
 
-              <div className="mt-3 flex items-center justify-between gap-3">
-                <p className="text-xs text-muted-foreground">
-                  Ask in plain language. The assistant can respond with actions when job context is available.
-                </p>
-
-                <Button
-                  onClick={handleSendMessage}
-                  disabled={
-                    sendingMessage || isActionLoading || isDeletingActiveConversation
-                  }
-                  className="h-10"
-                >
-                  <SendHorizontal className="h-4 w-4" />
-                  Send
-                </Button>
+                  <Button
+                    onClick={handleSendMessage}
+                    disabled={
+                      !input.trim() ||
+                      sendingMessage ||
+                      isActionLoading ||
+                      isDeletingActiveConversation
+                    }
+                    className="h-8 shrink-0 rounded-full px-3.5"
+                  >
+                    <SendHorizontal className="h-4 w-4" />
+                    Send
+                  </Button>
+                </div>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </section>
 
-        <div className="space-y-5">
-          <Card className="border border-border/70 shadow-xl">
-            <CardHeader className="border-b bg-muted/20">
-              <CardTitle className="text-xl">Current Context</CardTitle>
-              <CardDescription>
-                The signals currently shaping the assistant&apos;s answers.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4 p-4">
-              <div className="rounded-2xl border bg-background p-4">
-                <p className="text-xs uppercase tracking-[0.24em] text-muted-foreground">
-                  Profile
-                </p>
-                <p className="mt-2 text-lg font-semibold">
-                  {profileSummary.industry || "Career Profile"}
-                </p>
-                <p className="mt-1 text-sm text-muted-foreground">
+        <aside className="flex min-h-[320px] flex-col overflow-hidden rounded-[24px] border border-border/70 bg-card/90 shadow-[0_30px_90px_-45px_rgba(0,0,0,0.95)] backdrop-blur xl:min-h-0 xl:h-full">
+          <div className="border-b border-border/60 p-4">
+            <div>
+              <p className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">
+                Live context
+              </p>
+              <h2 className="mt-1 text-lg font-semibold">
+                Signals shaping the reply
+              </h2>
+            </div>
+          </div>
+
+          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4">
+            <div className="rounded-[24px] border border-sky-400/18 bg-[radial-gradient(circle_at_top,rgba(37,99,235,0.18),transparent_58%),linear-gradient(180deg,rgba(10,14,25,0.94),rgba(8,12,22,0.82))] p-4 shadow-[0_0_0_1px_rgba(56,189,248,0.05),0_24px_44px_-32px_rgba(37,99,235,0.95),0_12px_26px_-20px_rgba(14,165,233,0.45)]">
+                <div className="flex items-center gap-3">
+                  <div className="rounded-[24px] border border-sky-400/16 bg-sky-500/8 p-3 shadow-[0_12px_24px_-18px_rgba(37,99,235,0.85)]">
+                    <Sparkles className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">
+                      Profile signal
+                    </p>
+                    <p className="mt-1 text-base font-semibold">
+                      {profileSummary.industry || "Career Profile"}
+                    </p>
+                  </div>
+                </div>
+
+                <p className="mt-3 text-sm text-muted-foreground">
                   {profileSummary.experience || 0} years experience
                 </p>
+
                 <div className="mt-3 flex flex-wrap gap-2">
                   {profileSummary.skills?.length ? (
                     profileSummary.skills.map((skill) => (
-                      <Badge key={skill} variant="outline">
+                      <Badge key={skill} variant="outline" className="rounded-full">
                         {skill}
                       </Badge>
                     ))
                   ) : (
                     <p className="text-sm text-muted-foreground">
-                      Add more skills in onboarding to sharpen the assistant.
+                      Add more skills in onboarding to sharpen responses further.
+                    </p>
+                  )}
+                </div>
+
+                <div className="mt-4">
+                  <div className="mb-2 flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">{profileSignalTitle}</span>
+                    <span className="font-semibold">{profileSignalLabel}</span>
+                  </div>
+                  <Progress value={profileSignalValue} className="h-2" />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <MiniStat label="Tracked" value={trackerSummary.total || 0} />
+                <MiniStat label="Applied" value={trackerSummary.applied || 0} />
+                <MiniStat
+                  label="Interviewing"
+                  value={trackerSummary.interviewing || 0}
+                />
+              </div>
+
+              {activeContextJob ? (
+                <div className="rounded-[24px] border border-border/70 bg-background/70 p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="rounded-[24px] border border-border/70 bg-background p-3">
+                      <BriefcaseBusiness className="h-5 w-5" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">
+                        Active role
+                      </p>
+                      <p className="mt-1 text-base font-semibold">
+                        {activeContextJob.title}
+                      </p>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        {activeContextJob.company}
+                        {activeContextJob.location
+                          ? ` - ${activeContextJob.location}`
+                          : ""}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {activeContextJob.matchScore != null ? (
+                      <Badge variant="secondary" className="rounded-full">
+                        Match {activeContextJob.matchScore}
+                      </Badge>
+                    ) : null}
+                    {activeContextJob.atsScore != null ? (
+                      <Badge variant="outline" className="rounded-full">
+                        ATS {activeContextJob.atsScore}
+                      </Badge>
+                    ) : null}
+                    {activeContextJob.status ? (
+                      <Badge variant="outline" className="rounded-full">
+                        {activeContextJob.status}
+                      </Badge>
+                    ) : null}
+                  </div>
+
+                  <p className="mt-4 text-sm text-muted-foreground">
+                    {activeContextJob.atsSummary ||
+                      "Ask what is missing from your resume for this role to get sharper guidance."}
+                  </p>
+
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {activeContextJob.url ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="rounded-full"
+                        asChild
+                      >
+                        <Link
+                          href={activeContextJob.url}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          Open Listing
+                        </Link>
+                      </Button>
+                    ) : null}
+
+                    {activeContextJob.coverLetterHref ? (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="rounded-full"
+                        asChild
+                      >
+                        <Link href={activeContextJob.coverLetterHref}>
+                          Cover Letter
+                        </Link>
+                      </Button>
+                    ) : null}
+                  </div>
+                </div>
+              ) : (
+                <div className="rounded-[24px] border border-dashed border-border/70 bg-background/50 p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="rounded-[24px] border border-border/70 bg-background p-3">
+                      <BriefcaseBusiness className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold">No role context loaded</p>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        Jump in from a saved role or use the Jobs page to ask AI
+                        about a specific listing.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="rounded-[24px] border border-border/70 bg-background/70 p-4">
+                <div className="flex items-center gap-3">
+                  <div className="rounded-[24px] border border-border/70 bg-background p-3">
+                    <BarChart3 className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">
+                      Priority roles
+                    </p>
+                    <p className="mt-1 text-base font-semibold">
+                      Best saved jobs to revisit
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-4 space-y-3">
+                  {topSavedJobs.length > 0 ? (
+                    topSavedJobs.map((job) => (
+                      <button
+                        key={job.externalJobId}
+                        type="button"
+                        onClick={() =>
+                          startDraftConversation("job-strategist", {
+                            scopeType: "job",
+                            companyName: job.company,
+                            job,
+                            draftPrompt: "",
+                          })
+                        }
+                        className="w-full rounded-[24px] border border-border/70 bg-background/80 p-4 text-left transition-all hover:-translate-y-0.5 hover:shadow-lg"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="font-semibold">{job.title}</p>
+                            <p className="mt-1 text-sm text-muted-foreground">
+                              {job.company}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-lg font-semibold">
+                              {job.matchScore || 0}
+                            </p>
+                            <p className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">
+                              match
+                            </p>
+                          </div>
+                        </div>
+                      </button>
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      Save jobs first and they will show up here for faster
+                      strategy chats.
                     </p>
                   )}
                 </div>
               </div>
 
-              {activeContextJob ? (
-                <div className="rounded-2xl border bg-background p-4">
-                  <p className="text-xs uppercase tracking-[0.24em] text-muted-foreground">
-                    Active Role
-                  </p>
-                  <p className="mt-2 text-lg font-semibold">{activeContextJob.title}</p>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {activeContextJob.company}
-                  </p>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {activeContextJob.matchScore ? (
-                      <Badge variant="secondary">
-                        Match {activeContextJob.matchScore}
-                      </Badge>
-                    ) : null}
-                    {activeContextJob.atsScore ? (
-                      <Badge variant="outline">
-                        ATS {activeContextJob.atsScore}
-                      </Badge>
-                    ) : null}
-                    {activeContextJob.status ? (
-                      <Badge variant="outline">{activeContextJob.status}</Badge>
-                    ) : null}
+              <div className="rounded-[24px] border border-border/70 bg-background/70 p-4">
+                <div className="flex items-center gap-3">
+                  <div className="rounded-[24px] border border-border/70 bg-background p-3">
+                    <BadgeCheck className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">
+                      Interview signal
+                    </p>
+                    <p className="mt-1 text-base font-semibold">
+                      Latest prep result
+                    </p>
                   </div>
                 </div>
-              ) : null}
 
-              <div className="rounded-2xl border bg-background p-4">
-                <p className="text-xs uppercase tracking-[0.24em] text-muted-foreground">
-                  Tracker Snapshot
-                </p>
-                <p className="mt-2 text-lg font-semibold">
-                  {trackerSummary.total || 0} tracked roles
-                </p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <Badge variant="outline">Applied {trackerSummary.applied || 0}</Badge>
-                  <Badge variant="outline">
-                    Interviewing {trackerSummary.interviewing || 0}
-                  </Badge>
-                  <Badge variant="outline">Offer {trackerSummary.offer || 0}</Badge>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border border-border/70 shadow-xl">
-            <CardHeader className="border-b bg-muted/20">
-              <CardTitle className="text-xl">Priority Roles</CardTitle>
-              <CardDescription>
-                Jump into a role-focused chat from your strongest saved jobs.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3 p-4">
-              {topSavedJobs.length > 0 ? (
-                topSavedJobs.map((job) => (
-                  <button
-                    key={job.externalJobId}
-                    type="button"
-                    onClick={() =>
-                      startDraftConversation("job-strategist", {
-                        scopeType: "job",
-                        companyName: job.company,
-                        job,
-                      })
-                    }
-                    className="w-full rounded-2xl border border-border/70 bg-card p-4 text-left transition-all hover:-translate-y-0.5 hover:shadow-lg"
-                  >
-                    <div className="flex items-start justify-between gap-3">
+                {latestAssessment ? (
+                  <>
+                    <div className="mt-4 flex items-center justify-between gap-4">
                       <div>
-                        <p className="font-semibold">{job.title}</p>
-                        <p className="mt-1 text-sm text-muted-foreground">
-                          {job.company}
-                        </p>
-                      </div>
-
-                      <div className="min-w-[74px] text-right">
-                        <p className="text-lg font-semibold">{job.matchScore || 0}</p>
-                        <p className="text-xs text-muted-foreground">match</p>
-                      </div>
-                    </div>
-                  </button>
-                ))
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  Save jobs first, then the assistant can rank and strategize them here.
-                </p>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card className="border border-border/70 shadow-xl">
-            <CardHeader className="border-b bg-muted/20">
-              <CardTitle className="text-xl">Latest Interview Signal</CardTitle>
-              <CardDescription>
-                Your newest interview prep outcome also informs coaching.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4 p-4">
-              {latestAssessment ? (
-                <>
-                  <div className="rounded-2xl border bg-background p-4">
-                    <div className="flex items-center justify-between gap-4">
-                      <div>
-                        <p className="text-xs uppercase tracking-[0.24em] text-muted-foreground">
-                          Recent Score
+                        <p className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">
+                          Recent score
                         </p>
                         <p className="mt-2 text-3xl font-semibold">
                           {latestAssessment.score}
                         </p>
                       </div>
                       <div className="flex-1">
-                        <Progress value={latestAssessment.score} className="h-3" />
-                        <p className="mt-3 text-sm text-muted-foreground">
-                          {latestAssessment.tip || "No improvement tip saved yet."}
-                        </p>
+                        <Progress value={latestAssessment.score} className="h-2" />
                       </div>
                     </div>
-                  </div>
 
-                  <Button
-                    variant="outline"
-                    onClick={() => startDraftConversation("interview-coach", draftState)}
-                    className="w-full"
-                  >
-                    <BadgeCheck className="h-4 w-4" />
-                    Switch To Interview Coach
-                  </Button>
-                </>
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  Complete an interview quiz to unlock performance-aware coaching here.
-                </p>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+                    <p className="mt-4 text-sm text-muted-foreground">
+                      {latestAssessment.tip || "No improvement tip saved yet."}
+                    </p>
+
+                    <Button
+                      variant="outline"
+                      className="mt-4 w-full rounded-full"
+                      onClick={() => handleModeSwitch("interview-coach")}
+                    >
+                      Switch To Interview Coach
+                    </Button>
+                  </>
+                ) : (
+                  <p className="mt-4 text-sm text-muted-foreground">
+                    Complete an interview quiz to unlock performance-aware
+                    coaching here.
+                  </p>
+                )}
+              </div>
+          </div>
+        </aside>
       </div>
     </div>
   );
