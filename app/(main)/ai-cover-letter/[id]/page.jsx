@@ -31,12 +31,12 @@ export default async function EditCoverLetterPage({ params }) {
     return (
       <div className="container mx-auto py-6">
         <div className="flex flex-col space-y-2">
-          <Link href="/ai-cover-letter">
-            <Button variant="link" className="gap-2 pl-0">
+          <Button asChild variant="link" className="gap-2 pl-0">
+            <Link href="/ai-cover-letter">
               <ArrowLeft className="h-4 w-4" />
               Back to Cover Letters
-            </Button>
-          </Link>
+            </Link>
+          </Button>
         </div>
 
         <Card className="mt-4">
@@ -45,12 +45,12 @@ export default async function EditCoverLetterPage({ params }) {
             <CardDescription>{loadError}</CardDescription>
           </CardHeader>
           <CardContent className="flex gap-3">
-            <Link href={`/ai-cover-letter/${id}`}>
-              <Button variant="outline">Try Again</Button>
-            </Link>
-            <Link href="/ai-cover-letter">
-              <Button>Back To List</Button>
-            </Link>
+            <Button asChild variant="outline">
+              <Link href={`/ai-cover-letter/${id}`}>Try Again</Link>
+            </Button>
+            <Button asChild>
+              <Link href="/ai-cover-letter">Back To List</Link>
+            </Button>
           </CardContent>
         </Card>
       </div>
@@ -60,12 +60,12 @@ export default async function EditCoverLetterPage({ params }) {
   return (
     <div className="container mx-auto py-6">
       <div className="flex flex-col space-y-2">
-        <Link href="/ai-cover-letter">
-          <Button variant="link" className="gap-2 pl-0">
+        <Button asChild variant="link" className="gap-2 pl-0">
+          <Link href="/ai-cover-letter">
             <ArrowLeft className="h-4 w-4" />
             Back to Cover Letters
-          </Button>
-        </Link>
+          </Link>
+        </Button>
 
         <h1 className="text-6xl font-bold gradient-title mb-6">
           {coverLetter.jobTitle} at {coverLetter.companyName}

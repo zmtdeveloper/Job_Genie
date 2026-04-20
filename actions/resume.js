@@ -1,36 +1,33 @@
 "use server";
 
 import { db } from "@/lib/prisma";
-import { auth } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
 import { generateText } from "@/lib/gemini";
+import { requireDbUser } from "@/lib/server-user";
+import { withDbRetry } from "@/lib/prisma";
 
 export async function saveResume(content) {
-  const { userId } = await auth();
-  if (!userId) throw new Error("Unauthorized");
-
-  const user = await db.user.findUnique({
-    where: { clerkUserId: userId },
+  const user = await requireDbUser({
     select: {
       id: true,
     },
   });
 
-  if (!user) throw new Error("User not found");
-
   try {
-    const resume = await db.resume.upsert({
-      where: {
-        userId: user.id,
-      },
-      update: {
-        content,
-      },
-      create: {
-        userId: user.id,
-        content,
-      },
-    });
+    const resume = await withDbRetry(() =>
+      db.resume.upsert({
+        where: {
+          userId: user.id,
+        },
+        update: {
+          content,
+        },
+        create: {
+          userId: user.id,
+          content,
+        },
+      })
+    );
 
     revalidatePath("/resume");
     return resume;
@@ -41,37 +38,27 @@ export async function saveResume(content) {
 }
 
 export async function getResume() {
-  const { userId } = await auth();
-  if (!userId) throw new Error("Unauthorized");
-
-  const user = await db.user.findUnique({
-    where: { clerkUserId: userId },
+  const user = await requireDbUser({
     select: {
       id: true,
     },
   });
 
-  if (!user) throw new Error("User not found");
-
-  return await db.resume.findUnique({
-    where: {
-      userId: user.id,
-    },
-  });
+  return withDbRetry(() =>
+    db.resume.findUnique({
+      where: {
+        userId: user.id,
+      },
+    })
+  );
 }
 
 export async function improveWithAI({ current, type }) {
-  const { userId } = await auth();
-  if (!userId) throw new Error("Unauthorized");
-
-  const user = await db.user.findUnique({
-    where: { clerkUserId: userId },
+  const user = await requireDbUser({
     select: {
       industry: true,
     },
   });
-
-  if (!user) throw new Error("User not found");
 
   const prompt = `
     As an expert resume writer, improve the following ${type} description for a ${user.industry} professional.

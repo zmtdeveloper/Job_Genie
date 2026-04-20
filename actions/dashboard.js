@@ -1,8 +1,79 @@
 "use server";
 
 import { db } from "@/lib/prisma";
-import { auth } from "@clerk/nextjs/server";
 import { generateJson } from "@/lib/gemini";
+import { withDbRetry } from "@/lib/prisma";
+import { requireDbUser } from "@/lib/server-user";
+import { z } from "zod";
+
+const salaryRangeSchema = z.object({
+  role: z.string().trim().min(1),
+  min: z.coerce.number().finite().nonnegative(),
+  max: z.coerce.number().finite().nonnegative(),
+  median: z.coerce.number().finite().nonnegative(),
+  location: z.string().trim().optional().default(""),
+});
+
+const normalizeStringList = (value) =>
+  Array.from(
+    new Set(
+      (Array.isArray(value) ? value : [])
+        .map((entry) => String(entry || "").trim())
+        .filter(Boolean)
+    )
+  );
+
+const industryInsightsSchema = z.object({
+  salaryRanges: z.array(salaryRangeSchema).min(1).max(12),
+  growthRate: z.coerce.number().finite().min(-100).max(1000),
+  demandLevel: z
+    .string()
+    .trim()
+    .transform((value) => {
+      const normalizedValue = value.toLowerCase();
+
+      if (normalizedValue === "high") return "High";
+      if (normalizedValue === "low") return "Low";
+      return "Medium";
+    }),
+  topSkills: z.array(z.string()).transform(normalizeStringList),
+  marketOutlook: z
+    .string()
+    .trim()
+    .transform((value) => {
+      const normalizedValue = value.toLowerCase();
+
+      if (normalizedValue === "positive") return "Positive";
+      if (normalizedValue === "negative") return "Negative";
+      return "Neutral";
+    }),
+  keyTrends: z.array(z.string()).transform(normalizeStringList),
+  recommendedSkills: z.array(z.string()).transform(normalizeStringList),
+});
+
+function normalizeIndustryInsights(rawInsights) {
+  const result = industryInsightsSchema.safeParse(rawInsights);
+
+  if (!result.success) {
+    throw new Error("Generated industry insights were invalid");
+  }
+
+  return {
+    ...result.data,
+    topSkills: result.data.topSkills.slice(0, 12),
+    keyTrends: result.data.keyTrends.slice(0, 12),
+    recommendedSkills: result.data.recommendedSkills.slice(0, 12),
+  };
+}
+
+function buildIndustryInsightPayload(industry, insights) {
+  return {
+    industry,
+    ...insights,
+    lastUpdated: new Date(),
+    nextUpdate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+  };
+}
 
 export const generateAIInsights = async (industry) => {
   const prompt = `
@@ -25,36 +96,64 @@ export const generateAIInsights = async (industry) => {
           Include at least 5 skills and trends.
         `;
 
-  return generateJson({ prompt });
+  const rawInsights = await generateJson({ prompt });
+  return normalizeIndustryInsights(rawInsights);
 };
 
-export async function getIndustryInsights() {
-  const { userId } = await auth();
-  if (!userId) throw new Error("Unauthorized");
+export async function getOrCreateIndustryInsight(industry) {
+  if (!industry) {
+    throw new Error("Industry is required");
+  }
 
-  const user = await db.user.findUnique({
-    where: { clerkUserId: userId },
-    select: {
-      industry: true,
-      industryInsight: true,
-    },
+  const existingInsight = await withDbRetry(() =>
+    db.industryInsight.findUnique({
+      where: { industry },
+    })
+  );
+
+  if (existingInsight) {
+    return existingInsight;
+  }
+
+  const insights = await generateAIInsights(industry);
+
+  try {
+    return await withDbRetry(() =>
+      db.industryInsight.create({
+        data: buildIndustryInsightPayload(industry, insights),
+      })
+    );
+  } catch (error) {
+    if (error?.code !== "P2002") {
+      throw error;
+    }
+
+    const concurrentInsight = await withDbRetry(() =>
+      db.industryInsight.findUnique({
+        where: { industry },
+      })
+    );
+
+    if (concurrentInsight) {
+      return concurrentInsight;
+    }
+
+    throw error;
+  }
+}
+
+export async function getIndustryInsights() {
+  const user = await requireDbUser({
+    industry: true,
+    industryInsight: true,
   });
 
-  if (!user) throw new Error("User not found");
+  if (!user.industry) {
+    throw new Error("Complete onboarding to unlock industry insights");
+  }
 
-  // If no insights exist, generate them
   if (!user.industryInsight) {
-    const insights = await generateAIInsights(user.industry);
-
-    const industryInsight = await db.industryInsight.create({
-      data: {
-        industry: user.industry,
-        ...insights,
-        nextUpdate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-      },
-    });
-
-    return industryInsight;
+    return getOrCreateIndustryInsight(user.industry);
   }
 
   return user.industryInsight;

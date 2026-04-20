@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useDeferredValue } from "react";
+import { useState, useEffect, useDeferredValue, useMemo } from "react";
 import { useForm, Controller, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -25,36 +25,157 @@ import { entriesToMarkdown } from "@/app/lib/helper";
 import { resumeSchema } from "@/app/lib/schema";
 import html2pdf from "html2pdf.js/dist/html2pdf.min.js";
 
+const EMPTY_RESUME_FORM = {
+  contactInfo: {
+    email: "",
+    mobile: "",
+    linkedin: "",
+    twitter: "",
+  },
+  summary: "",
+  skills: "",
+  experience: [],
+  education: [],
+  projects: [],
+};
+
+function normalizeResumeText(value) {
+  return String(value || "").replace(/\r\n/g, "\n").trim();
+}
+
+function normalizeResumeMarkdownForCompare(value) {
+  return normalizeResumeText(value)
+    .replace(/[ \t]+/g, " ")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function extractSectionContent(content, sectionTitle) {
+  const expression = new RegExp(
+    `## ${escapeRegExp(sectionTitle)}\\n\\n([\\s\\S]*?)(?=\\n## |$)`,
+    "i"
+  );
+  const match = normalizeResumeText(content).match(expression);
+  return match?.[1]?.trim() || "";
+}
+
+function parseResumeEntries(sectionContent) {
+  if (!sectionContent) {
+    return [];
+  }
+
+  const entries = [];
+  const matcher =
+    /^###\s+(.+?)\s+@\s+(.+?)\n(.+?)\n\n([\s\S]*?)(?=^###\s+|$)/gm;
+  let match;
+
+  while ((match = matcher.exec(`${sectionContent}\n`)) !== null) {
+    const [, title, organization, dateRange, description] = match;
+    const dateParts = String(dateRange || "").split(" - ");
+    const startDate = String(dateParts[0] || "").trim();
+    const endDateLabel = String(dateParts[1] || "").trim();
+    const current = /present/i.test(endDateLabel);
+
+    entries.push({
+      title: String(title || "").trim(),
+      organization: String(organization || "").trim(),
+      startDate,
+      endDate: current ? "" : endDateLabel,
+      description: String(description || "").trim(),
+      current,
+    });
+  }
+
+  return entries;
+}
+
+function parseResumeMarkdown(content) {
+  const normalizedContent = normalizeResumeText(content);
+
+  if (!normalizedContent) {
+    return {
+      values: EMPTY_RESUME_FORM,
+      canHydrate: true,
+    };
+  }
+
+  const contactInfo = {
+    email:
+      normalizedContent.match(/&#128231;\s*([^|\n<]+)/)?.[1]?.trim() || "",
+    mobile:
+      normalizedContent.match(/&#128241;\s*([^|\n<]+)/)?.[1]?.trim() || "",
+    linkedin:
+      normalizedContent.match(/\[LinkedIn\]\(([^)]+)\)/)?.[1]?.trim() || "",
+    twitter:
+      normalizedContent.match(/\[Twitter\]\(([^)]+)\)/)?.[1]?.trim() || "",
+  };
+
+  const values = {
+    contactInfo,
+    summary: extractSectionContent(normalizedContent, "Professional Summary"),
+    skills: extractSectionContent(normalizedContent, "Skills"),
+    experience: parseResumeEntries(
+      extractSectionContent(normalizedContent, "Work Experience")
+    ),
+    education: parseResumeEntries(
+      extractSectionContent(normalizedContent, "Education")
+    ),
+    projects: parseResumeEntries(
+      extractSectionContent(normalizedContent, "Projects")
+    ),
+  };
+
+  const hasHydratedValues = Boolean(
+    values.summary ||
+      values.skills ||
+      values.experience.length ||
+      values.education.length ||
+      values.projects.length ||
+      Object.values(values.contactInfo).some(Boolean)
+  );
+
+  return {
+    values: hasHydratedValues ? values : EMPTY_RESUME_FORM,
+    canHydrate: hasHydratedValues,
+  };
+}
+
 export default function ResumeBuilder({ initialContent }) {
+  const parsedInitialResume = useMemo(
+    () => parseResumeMarkdown(initialContent),
+    [initialContent]
+  );
   const [activeTab, setActiveTab] = useState(
     initialContent ? "preview" : "edit"
   );
   const [previewContent, setPreviewContent] = useState(initialContent || "");
+  const [syncedPreviewContent, setSyncedPreviewContent] = useState(
+    initialContent || ""
+  );
+  const [isFormHydratedFromMarkdown, setIsFormHydratedFromMarkdown] = useState(
+    () => parsedInitialResume.canHydrate || !initialContent
+  );
   const { user } = useUser();
   const [resumeMode, setResumeMode] = useState("preview");
 
   const {
     control,
     register,
+    reset,
     handleSubmit,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(resumeSchema),
-    defaultValues: {
-      contactInfo: {},
-      summary: "",
-      skills: "",
-      experience: [],
-      education: [],
-      projects: [],
-    },
+    defaultValues: EMPTY_RESUME_FORM,
   });
 
   const {
     loading: isSaving,
     fn: saveResumeFn,
-    data: saveResult,
-    error: saveError,
   } = useFetch(saveResume);
 
   const deferredFormValues = useDeferredValue(useWatch({ control }));
@@ -100,16 +221,15 @@ export default function ResumeBuilder({ initialContent }) {
       .filter(Boolean)
       .join("\n\n") || initialContent || "";
 
-  useEffect(() => {
-    if (saveResult && !isSaving) {
-      toast.success("Resume saved successfully!");
-    }
-    if (saveError) {
-      toast.error(saveError.message || "Failed to save resume");
-    }
-  }, [saveResult, saveError, isSaving]);
-
   const [isGenerating, setIsGenerating] = useState(false);
+  const canUseFormAsSource = !initialContent || isFormHydratedFromMarkdown;
+  const hasUnsyncedMarkdownEdits =
+    normalizeResumeMarkdownForCompare(previewContent) !==
+    normalizeResumeMarkdownForCompare(syncedPreviewContent);
+
+  useEffect(() => {
+    reset(parsedInitialResume.values);
+  }, [parsedInitialResume, reset]);
 
   const generatePDF = async () => {
     setIsGenerating(true);
@@ -133,9 +253,24 @@ export default function ResumeBuilder({ initialContent }) {
 
   const onSubmit = async () => {
     try {
+      if (activeTab === "edit" && !canUseFormAsSource) {
+        toast.error(
+          "This resume was not safely converted into form fields. Please use the Markdown tab to edit and save it."
+        );
+        return;
+      }
+
+      if (activeTab === "edit" && hasUnsyncedMarkdownEdits) {
+        toast.error(
+          "Markdown changes are newer than the form. Save from the Markdown tab or switch back to preview to resync the form output."
+        );
+        return;
+      }
+
       await saveResumeFn(
         activeTab === "preview" ? previewContent : generatedPreviewContent
       );
+      toast.success("Resume saved successfully!");
     } catch (error) {
       console.error("Save error:", error);
     }
@@ -184,8 +319,9 @@ export default function ResumeBuilder({ initialContent }) {
       <Tabs
         value={activeTab}
         onValueChange={(nextTab) => {
-          if (nextTab === "preview") {
+          if (nextTab === "preview" && canUseFormAsSource) {
             setPreviewContent(generatedPreviewContent);
+            setSyncedPreviewContent(generatedPreviewContent);
           }
 
           setActiveTab(nextTab);
@@ -197,6 +333,28 @@ export default function ResumeBuilder({ initialContent }) {
         </TabsList>
 
         <TabsContent value="edit">
+          {!canUseFormAsSource ? (
+            <div className="mb-4 flex items-center gap-2 rounded border-2 border-yellow-600 p-3 text-yellow-600">
+              <AlertTriangle className="h-5 w-5" />
+              <span className="text-sm">
+                Your existing markdown resume could not be safely mapped into the
+                form. Edit and save it from the Markdown tab to avoid losing
+                content.
+              </span>
+            </div>
+          ) : null}
+
+          {hasUnsyncedMarkdownEdits ? (
+            <div className="mb-4 flex items-center gap-2 rounded border-2 border-yellow-600 p-3 text-yellow-600">
+              <AlertTriangle className="h-5 w-5" />
+              <span className="text-sm">
+                Markdown edits are ahead of the form right now. Save from the
+                Markdown tab or return to preview to sync the form-generated
+                version first.
+              </span>
+            </div>
+          ) : null}
+
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
             <div className="space-y-4">
               <h3 className="text-lg font-medium">Contact Information</h3>

@@ -553,7 +553,14 @@ export default function JobsHub({
       return;
     }
 
-    const savedJob = await saveJobFn(selectedJobDetail);
+    let savedJob = null;
+
+    try {
+      savedJob = await saveJobFn(selectedJobDetail);
+    } catch (error) {
+      console.error("Save job error:", error);
+      return;
+    }
 
     if (!savedJob) {
       return;
@@ -570,16 +577,21 @@ export default function JobsHub({
 
     let savedJob = null;
 
-    if (selectedJobDetail.isSaved) {
-      savedJob = await updateSavedJobFn({
-        externalJobId: selectedJobDetail.externalJobId,
-        status: nextStatus,
-      });
-    } else {
-      savedJob = await saveJobFn({
-        ...selectedJobDetail,
-        status: nextStatus,
-      });
+    try {
+      if (selectedJobDetail.isSaved) {
+        savedJob = await updateSavedJobFn({
+          externalJobId: selectedJobDetail.externalJobId,
+          status: nextStatus,
+        });
+      } else {
+        savedJob = await saveJobFn({
+          ...selectedJobDetail,
+          status: nextStatus,
+        });
+      }
+    } catch (error) {
+      console.error("Update job status error:", error);
+      return;
     }
 
     if (!savedJob) {
@@ -597,16 +609,21 @@ export default function JobsHub({
 
     let savedJob = null;
 
-    if (selectedJobDetail.isSaved) {
-      savedJob = await updateSavedJobFn({
-        externalJobId: selectedJobDetail.externalJobId,
-        notes: notesDraft,
-      });
-    } else {
-      savedJob = await saveJobFn({
-        ...selectedJobDetail,
-        notes: notesDraft,
-      });
+    try {
+      if (selectedJobDetail.isSaved) {
+        savedJob = await updateSavedJobFn({
+          externalJobId: selectedJobDetail.externalJobId,
+          notes: notesDraft,
+        });
+      } else {
+        savedJob = await saveJobFn({
+          ...selectedJobDetail,
+          notes: notesDraft,
+        });
+      }
+    } catch (error) {
+      console.error("Save job notes error:", error);
+      return;
     }
 
     if (!savedJob) {
@@ -634,10 +651,17 @@ export default function JobsHub({
       return;
     }
 
-    const deletedJob = await deleteSavedJobFn({
-      externalJobId: selectedJobDetail.externalJobId,
-      provider: selectedJobDetail.provider,
-    });
+    let deletedJob = null;
+
+    try {
+      deletedJob = await deleteSavedJobFn({
+        externalJobId: selectedJobDetail.externalJobId,
+        provider: selectedJobDetail.provider,
+      });
+    } catch (error) {
+      console.error("Delete saved job error:", error);
+      return;
+    }
 
     if (!deletedJob) {
       return;

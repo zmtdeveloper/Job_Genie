@@ -2,7 +2,7 @@
 
 import { auth } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
-import { db } from "@/lib/prisma";
+import { db, withDbRetry } from "@/lib/prisma";
 import { getJobProviderConfig, getJobsConfig } from "@/lib/jobs/config";
 import { DEFAULT_JOB_STATUS, JOB_APPLICATION_STATUSES } from "@/lib/jobs/constants";
 import {
@@ -17,6 +17,7 @@ import {
   scoreJobMatch,
   splitExternalJobId,
 } from "@/lib/jobs/utils";
+import { requireDbUser } from "@/lib/server-user";
 
 function pickSingleValue(value) {
   return Array.isArray(value) ? value[0] : value;
@@ -214,16 +215,7 @@ function buildJobInsights(job, profile) {
 }
 
 async function getUserRecord() {
-  const { userId } = await auth();
-
-  if (!userId) {
-    throw new Error("Unauthorized");
-  }
-
-  const user = await db.user.findUnique({
-    where: {
-      clerkUserId: userId,
-    },
+  const user = await requireDbUser({
     select: {
       id: true,
       industry: true,
@@ -238,10 +230,6 @@ async function getUserRecord() {
     },
   });
 
-  if (!user) {
-    throw new Error("User not found");
-  }
-
   return {
     ...user,
     industryLabel: formatIndustryLabel(user.industry),
@@ -251,10 +239,12 @@ async function getUserRecord() {
 
 async function getSavedJobsSafe(userId) {
   try {
-    const savedJobs = await db.savedJob.findMany({
-      where: { userId },
-      orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
-    });
+    const savedJobs = await withDbRetry(() =>
+      db.savedJob.findMany({
+        where: { userId },
+        orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
+      })
+    );
 
     return savedJobs.map(serializeSavedJob);
   } catch (error) {
@@ -265,14 +255,16 @@ async function getSavedJobsSafe(userId) {
 
 async function getSavedJobByExternalIdSafe(userId, externalJobId) {
   try {
-    const savedJob = await db.savedJob.findUnique({
-      where: {
-        userId_externalJobId: {
-          userId,
-          externalJobId,
+    const savedJob = await withDbRetry(() =>
+      db.savedJob.findUnique({
+        where: {
+          userId_externalJobId: {
+            userId,
+            externalJobId,
+          },
         },
-      },
-    });
+      })
+    );
 
     return savedJob ? serializeSavedJob(savedJob) : null;
   } catch (error) {
@@ -585,66 +577,68 @@ export async function saveJob(jobInput) {
   }
 
   try {
-    const savedJob = await db.savedJob.upsert({
-      where: {
-        userId_externalJobId: {
-          userId: profile.id,
-          externalJobId,
+    const savedJob = await withDbRetry(() =>
+      db.savedJob.upsert({
+        where: {
+          userId_externalJobId: {
+            userId: profile.id,
+            externalJobId,
+          },
         },
-      },
-      update: {
-        provider: providerConfig.id,
-        title,
-        companyName,
-        location: cleanString(jobInput?.location) || null,
-        locality: cleanString(jobInput?.locality) || null,
-        listingUrl: cleanString(jobInput?.url) || null,
-        applyUrl: cleanString(jobInput?.applyUrl) || null,
-        sourceUrl: cleanString(jobInput?.sourceUrl) || null,
-        salaryText: cleanString(jobInput?.salary) || null,
-        jobType: cleanString(jobInput?.jobType) || null,
-        postedAt: cleanString(jobInput?.postedAt) || null,
-        description: description || null,
-        matchScore:
-          typeof jobInput?.matchScore === "number" ? jobInput.matchScore : null,
-        matchLevel: cleanString(jobInput?.matchLevel) || null,
-        matchReasons: Array.isArray(jobInput?.matchReasons)
-          ? jobInput.matchReasons.filter(Boolean)
-          : [],
-        keySkills,
-        status: normalizeJobStatus(jobInput?.status),
-        notes: cleanString(jobInput?.notes) || null,
-        atsScore,
-        atsSummary,
-      },
-      create: {
-        userId: profile.id,
-        provider: providerConfig.id,
-        externalJobId,
-        title,
-        companyName,
-        location: cleanString(jobInput?.location) || null,
-        locality: cleanString(jobInput?.locality) || null,
-        listingUrl: cleanString(jobInput?.url) || null,
-        applyUrl: cleanString(jobInput?.applyUrl) || null,
-        sourceUrl: cleanString(jobInput?.sourceUrl) || null,
-        salaryText: cleanString(jobInput?.salary) || null,
-        jobType: cleanString(jobInput?.jobType) || null,
-        postedAt: cleanString(jobInput?.postedAt) || null,
-        description: description || null,
-        matchScore:
-          typeof jobInput?.matchScore === "number" ? jobInput.matchScore : null,
-        matchLevel: cleanString(jobInput?.matchLevel) || null,
-        matchReasons: Array.isArray(jobInput?.matchReasons)
-          ? jobInput.matchReasons.filter(Boolean)
-          : [],
-        keySkills,
-        status: normalizeJobStatus(jobInput?.status),
-        notes: cleanString(jobInput?.notes) || null,
-        atsScore,
-        atsSummary,
-      },
-    });
+        update: {
+          provider: providerConfig.id,
+          title,
+          companyName,
+          location: cleanString(jobInput?.location) || null,
+          locality: cleanString(jobInput?.locality) || null,
+          listingUrl: cleanString(jobInput?.url) || null,
+          applyUrl: cleanString(jobInput?.applyUrl) || null,
+          sourceUrl: cleanString(jobInput?.sourceUrl) || null,
+          salaryText: cleanString(jobInput?.salary) || null,
+          jobType: cleanString(jobInput?.jobType) || null,
+          postedAt: cleanString(jobInput?.postedAt) || null,
+          description: description || null,
+          matchScore:
+            typeof jobInput?.matchScore === "number" ? jobInput.matchScore : null,
+          matchLevel: cleanString(jobInput?.matchLevel) || null,
+          matchReasons: Array.isArray(jobInput?.matchReasons)
+            ? jobInput.matchReasons.filter(Boolean)
+            : [],
+          keySkills,
+          status: normalizeJobStatus(jobInput?.status),
+          notes: cleanString(jobInput?.notes) || null,
+          atsScore,
+          atsSummary,
+        },
+        create: {
+          userId: profile.id,
+          provider: providerConfig.id,
+          externalJobId,
+          title,
+          companyName,
+          location: cleanString(jobInput?.location) || null,
+          locality: cleanString(jobInput?.locality) || null,
+          listingUrl: cleanString(jobInput?.url) || null,
+          applyUrl: cleanString(jobInput?.applyUrl) || null,
+          sourceUrl: cleanString(jobInput?.sourceUrl) || null,
+          salaryText: cleanString(jobInput?.salary) || null,
+          jobType: cleanString(jobInput?.jobType) || null,
+          postedAt: cleanString(jobInput?.postedAt) || null,
+          description: description || null,
+          matchScore:
+            typeof jobInput?.matchScore === "number" ? jobInput.matchScore : null,
+          matchLevel: cleanString(jobInput?.matchLevel) || null,
+          matchReasons: Array.isArray(jobInput?.matchReasons)
+            ? jobInput.matchReasons.filter(Boolean)
+            : [],
+          keySkills,
+          status: normalizeJobStatus(jobInput?.status),
+          notes: cleanString(jobInput?.notes) || null,
+          atsScore,
+          atsSummary,
+        },
+      })
+    );
 
     revalidatePath("/jobs");
     return serializeSavedJob(savedJob);
@@ -674,28 +668,32 @@ export async function updateSavedJob(jobInput) {
   }
 
   try {
-    const savedJob = await db.savedJob.update({
-      where: {
-        userId_externalJobId: {
-          userId: profile.id,
-          externalJobId,
+    const savedJob = await withDbRetry(() =>
+      db.savedJob.update({
+        where: {
+          userId_externalJobId: {
+            userId: profile.id,
+            externalJobId,
+          },
         },
-      },
-      data: {
-        status:
-          jobInput?.status != null
-            ? normalizeJobStatus(jobInput.status)
-            : undefined,
-        notes:
-          jobInput?.notes != null ? cleanString(jobInput.notes) || null : undefined,
-        atsScore:
-          typeof jobInput?.atsScore === "number" ? jobInput.atsScore : undefined,
-        atsSummary:
-          jobInput?.atsSummary != null
-            ? cleanString(jobInput.atsSummary) || null
-            : undefined,
-      },
-    });
+        data: {
+          status:
+            jobInput?.status != null
+              ? normalizeJobStatus(jobInput.status)
+              : undefined,
+          notes:
+            jobInput?.notes != null
+              ? cleanString(jobInput.notes) || null
+              : undefined,
+          atsScore:
+            typeof jobInput?.atsScore === "number" ? jobInput.atsScore : undefined,
+          atsSummary:
+            jobInput?.atsSummary != null
+              ? cleanString(jobInput.atsSummary) || null
+              : undefined,
+        },
+      })
+    );
 
     revalidatePath("/jobs");
     return serializeSavedJob(savedJob);
@@ -723,14 +721,16 @@ export async function deleteSavedJob(jobInput) {
   }
 
   try {
-    await db.savedJob.delete({
-      where: {
-        userId_externalJobId: {
-          userId: profile.id,
-          externalJobId,
+    await withDbRetry(() =>
+      db.savedJob.delete({
+        where: {
+          userId_externalJobId: {
+            userId: profile.id,
+            externalJobId,
+          },
         },
-      },
-    });
+      })
+    );
 
     revalidatePath("/jobs");
 

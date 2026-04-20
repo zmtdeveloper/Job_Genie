@@ -43,11 +43,11 @@ const HeroSection = ({ isSignedIn = false, signInRedirectUrl = "/dashboard" }) =
         </div>
         <div className="flex justify-center space-x-4">
           {isSignedIn ? (
-            <Link href="/dashboard">
-              <Button size="lg" className="px-8">
+            <Button asChild size="lg" className="px-8">
+              <Link href="/dashboard">
                 Get Started
-              </Button>
-            </Link>
+              </Link>
+            </Button>
           ) : (
             <SignInModalButton
               size="lg"
@@ -58,11 +58,15 @@ const HeroSection = ({ isSignedIn = false, signInRedirectUrl = "/dashboard" }) =
               Get Started
             </SignInModalButton>
           )}
-          <Link href="https://www.youtube.com/roadsidecoder">
-            <Button size="lg" variant="outline" className="px-8">
+          <Button asChild size="lg" variant="outline" className="px-8">
+            <a
+              href="https://www.youtube.com/roadsidecoder"
+              target="_blank"
+              rel="noreferrer"
+            >
               Watch Demo
-            </Button>
-          </Link>
+            </a>
+          </Button>
         </div>
         <div className="hero-image-wrapper mt-5 md:mt-0">
           <div ref={imageRef} className="hero-image">

@@ -66,7 +66,7 @@ export default function Quiz({ jobContext }) {
       await saveQuizResultFn(quizData, answers, score);
       toast.success("Quiz completed!");
     } catch (error) {
-      toast.error(error.message || "Failed to save quiz results");
+      console.error("Save quiz result error:", error);
     }
   };
 
@@ -79,7 +79,14 @@ export default function Quiz({ jobContext }) {
   };
 
   const handleStartQuiz = async () => {
-    const nextQuiz = await generateQuizFn(jobContext);
+    let nextQuiz = null;
+
+    try {
+      nextQuiz = await generateQuizFn(jobContext);
+    } catch (error) {
+      console.error("Generate quiz error:", error);
+      return;
+    }
 
     if (!nextQuiz) {
       return;

@@ -1,8 +1,7 @@
 "use server";
 
-import { auth } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
-import { db } from "@/lib/prisma";
+import { db, withDbRetry } from "@/lib/prisma";
 import { generateJson } from "@/lib/gemini";
 import {
   CHAT_ACTION_LABELS,
@@ -16,6 +15,7 @@ import {
   cleanString,
   extractJobSkills,
 } from "@/lib/jobs/utils";
+import { requireDbUser } from "@/lib/server-user";
 
 function pickSingleValue(value) {
   return Array.isArray(value) ? value[0] : value;
@@ -282,16 +282,7 @@ function serializeConversation(record, resumeContent = "") {
 }
 
 async function getChatUserContext() {
-  const { userId } = await auth();
-
-  if (!userId) {
-    throw new Error("Unauthorized");
-  }
-
-  const user = await db.user.findUnique({
-    where: {
-      clerkUserId: userId,
-    },
+  const user = await requireDbUser({
     select: {
       id: true,
       name: true,
@@ -336,10 +327,6 @@ async function getChatUserContext() {
       },
     },
   });
-
-  if (!user) {
-    throw new Error("User not found");
-  }
 
   const savedJobs = user.savedJobs
     .map((job) => serializeSavedJobForChat(job, user.resume?.content || ""))
@@ -386,14 +373,16 @@ async function getSavedJobContext(userId, externalJobId, resumeContent = "") {
     return null;
   }
 
-  const savedJob = await db.savedJob.findUnique({
-    where: {
-      userId_externalJobId: {
-        userId,
-        externalJobId,
+  const savedJob = await withDbRetry(() =>
+    db.savedJob.findUnique({
+      where: {
+        userId_externalJobId: {
+          userId,
+          externalJobId,
+        },
       },
-    },
-  });
+    })
+  );
 
   return savedJob ? serializeSavedJobForChat(savedJob, resumeContent) : null;
 }
@@ -484,25 +473,27 @@ async function getConversationDetails(userId, conversationId, resumeContent = ""
     return null;
   }
 
-  const conversation = await db.chatConversation.findFirst({
-    where: {
-      id: conversationId,
-      userId,
-    },
-    include: {
-      messages: {
-        orderBy: {
-          createdAt: "asc",
-        },
-        take: 60,
+  const conversation = await withDbRetry(() =>
+    db.chatConversation.findFirst({
+      where: {
+        id: conversationId,
+        userId,
       },
-      _count: {
-        select: {
-          messages: true,
+      include: {
+        messages: {
+          orderBy: {
+            createdAt: "asc",
+          },
+          take: 60,
+        },
+        _count: {
+          select: {
+            messages: true,
+          },
         },
       },
-    },
-  });
+    })
+  );
 
   return conversation ? serializeConversation(conversation, resumeContent) : null;
 }
@@ -714,26 +705,28 @@ export async function getCareerChatPageData(searchParams) {
   const fallbackMode = normalizeMode(pickSingleValue(resolvedSearchParams?.mode));
   const draftContext = await buildDraftContext(profile, resolvedSearchParams);
 
-  const conversationList = await db.chatConversation.findMany({
-    where: {
-      userId: profile.userId,
-    },
-    include: {
-      messages: {
-        orderBy: {
-          createdAt: "desc",
-        },
-        take: 1,
+  const conversationList = await withDbRetry(() =>
+    db.chatConversation.findMany({
+      where: {
+        userId: profile.userId,
       },
-      _count: {
-        select: {
-          messages: true,
+      include: {
+        messages: {
+          orderBy: {
+            createdAt: "desc",
+          },
+          take: 1,
+        },
+        _count: {
+          select: {
+            messages: true,
+          },
         },
       },
-    },
-    orderBy: [{ lastMessageAt: "desc" }, { updatedAt: "desc" }],
-    take: 24,
-  });
+      orderBy: [{ lastMessageAt: "desc" }, { updatedAt: "desc" }],
+      take: 24,
+    })
+  );
 
   let selectedConversation = requestedConversationId
     ? await getConversationDetails(
@@ -790,68 +783,54 @@ export async function sendChatMessage(input) {
           job: buildChatJobSnapshot(input.draftContext.job, profile.resumeContent),
         }
       : null;
+  const conversationMetadata = draftContext
+    ? {
+        companyName: draftContext.companyName || draftContext.job?.company || "",
+        draftPrompt: draftContext.draftPrompt || "",
+        job: draftContext.job,
+      }
+    : null;
 
   let conversation = null;
   let createdConversation = false;
 
   if (cleanString(input?.conversationId)) {
-    conversation = await db.chatConversation.findFirst({
-      where: {
-        id: cleanString(input.conversationId),
-        userId: profile.userId,
-      },
-      include: {
-        messages: {
-          orderBy: {
-            createdAt: "asc",
-          },
-          take: 60,
+    conversation = await withDbRetry(() =>
+      db.chatConversation.findFirst({
+        where: {
+          id: cleanString(input.conversationId),
+          userId: profile.userId,
         },
-      },
-    });
+        include: {
+          messages: {
+            orderBy: {
+              createdAt: "asc",
+            },
+            take: 60,
+          },
+        },
+      })
+    );
   }
 
   if (!conversation) {
     createdConversation = true;
-    conversation = await db.chatConversation.create({
-      data: {
-        userId: profile.userId,
-        title: buildConversationTitle(modeId, draftContext, message),
-        mode: modeId,
-        scopeType: draftContext?.scopeType || CHAT_SCOPE_TYPES.GENERAL,
-        relatedExternalJobId: draftContext?.job?.externalJobId || null,
-        relatedCompanyName:
-          draftContext?.companyName || draftContext?.job?.company || null,
-        metadata: draftContext
-          ? {
-              companyName:
-                draftContext.companyName || draftContext.job?.company || "",
-              draftPrompt: draftContext.draftPrompt || "",
-              job: draftContext.job,
-            }
-          : null,
-      },
-      include: {
-        messages: {
-          orderBy: {
-            createdAt: "asc",
-          },
-          take: 60,
-        },
-      },
-    });
+    conversation = {
+      id: "",
+      userId: profile.userId,
+      title: buildConversationTitle(modeId, draftContext, message),
+      mode: modeId,
+      scopeType: draftContext?.scopeType || CHAT_SCOPE_TYPES.GENERAL,
+      relatedExternalJobId: draftContext?.job?.externalJobId || null,
+      relatedCompanyName:
+        draftContext?.companyName || draftContext?.job?.company || null,
+      metadata: conversationMetadata,
+      messages: [],
+    };
   }
 
-  await db.chatMessage.create({
-    data: {
-      conversationId: conversation.id,
-      role: "user",
-      content: message,
-    },
-  });
-
   const recentMessages = [
-    ...conversation.messages,
+    ...(conversation.messages || []),
     {
       role: "user",
       content: message,
@@ -872,62 +851,103 @@ export async function sendChatMessage(input) {
     aiResponse?.suggestedTrackerNote,
     metadata.job
   );
+  const assistantReply =
+    normalizeAssistantReply(aiResponse?.reply) || "I could not generate a reply.";
+  const nextConversationTitle =
+    createdConversation && cleanString(aiResponse?.conversationTitle)
+      ? cleanString(aiResponse.conversationTitle)
+      : conversation.title;
+  const lastMessageAt = new Date();
 
-  await db.chatMessage.create({
-    data: {
-      conversationId: conversation.id,
-      role: "assistant",
-      content:
-        normalizeAssistantReply(aiResponse?.reply) ||
-        "I could not generate a reply.",
-      actions: assistantActions,
-    },
-  });
+  const conversationId = await withDbRetry(() =>
+    db.$transaction(async (tx) => {
+      if (conversation.id) {
+        await tx.chatMessage.create({
+          data: {
+            conversationId: conversation.id,
+            role: "user",
+            content: message,
+          },
+        });
 
-  const updatedConversation = await db.chatConversation.update({
-    where: {
-      id: conversation.id,
-    },
-    data: {
-      title:
-        createdConversation && cleanString(aiResponse?.conversationTitle)
-          ? cleanString(aiResponse.conversationTitle)
-          : conversation.title,
-      lastMessageAt: new Date(),
-    },
-    include: {
-      messages: {
-        orderBy: {
-          createdAt: "asc",
+        await tx.chatMessage.create({
+          data: {
+            conversationId: conversation.id,
+            role: "assistant",
+            content: assistantReply,
+            actions: assistantActions,
+          },
+        });
+
+        const updatedConversationRecord = await tx.chatConversation.update({
+          where: {
+            id: conversation.id,
+          },
+          data: {
+            title: nextConversationTitle,
+            lastMessageAt,
+          },
+          select: {
+            id: true,
+          },
+        });
+
+        return updatedConversationRecord.id;
+      }
+
+      const createdConversationRecord = await tx.chatConversation.create({
+        data: {
+          userId: profile.userId,
+          title: nextConversationTitle,
+          mode: modeId,
+          scopeType: draftContext?.scopeType || CHAT_SCOPE_TYPES.GENERAL,
+          relatedExternalJobId: draftContext?.job?.externalJobId || null,
+          relatedCompanyName:
+            draftContext?.companyName || draftContext?.job?.company || null,
+          metadata: conversationMetadata,
+          lastMessageAt,
+          messages: {
+            create: [
+              {
+                role: "user",
+                content: message,
+              },
+              {
+                role: "assistant",
+                content: assistantReply,
+                actions: assistantActions,
+              },
+            ],
+          },
         },
-        take: 60,
-      },
-      _count: {
         select: {
-          messages: true,
+          id: true,
         },
-      },
-    },
-  });
+      });
+
+      return createdConversationRecord.id;
+    })
+  );
+
+  const updatedConversation = await getConversationDetails(
+    profile.userId,
+    conversationId,
+    profile.resumeContent
+  );
+
+  if (!updatedConversation) {
+    throw new Error("Conversation could not be loaded");
+  }
 
   revalidatePath("/career-chat");
 
   return {
-    conversation: serializeConversation(updatedConversation, profile.resumeContent),
+    conversation: updatedConversation,
   };
 }
 
 export async function syncConversationJobState(input) {
-  const { userId } = await auth();
-
-  if (!userId) {
-    throw new Error("Unauthorized");
-  }
-
-  const user = await db.user.findUnique({
-    where: {
-      clerkUserId: userId,
-    },
+  const user = await requireDbUser({
     select: {
       id: true,
       resume: {
@@ -938,10 +958,6 @@ export async function syncConversationJobState(input) {
     },
   });
 
-  if (!user) {
-    throw new Error("User not found");
-  }
-
   const conversationId = cleanString(input?.conversationId);
   const normalizedJob = buildChatJobSnapshot(input?.job, user.resume?.content || "");
 
@@ -949,12 +965,14 @@ export async function syncConversationJobState(input) {
     throw new Error("Conversation id and job are required");
   }
 
-  const conversation = await db.chatConversation.findFirst({
-    where: {
-      id: conversationId,
-      userId: user.id,
-    },
-  });
+  const conversation = await withDbRetry(() =>
+    db.chatConversation.findFirst({
+      where: {
+        id: conversationId,
+        userId: user.id,
+      },
+    })
+  );
 
   if (!conversation) {
     throw new Error("Conversation not found");
@@ -965,20 +983,22 @@ export async function syncConversationJobState(input) {
     user.resume?.content || ""
   );
 
-  await db.chatConversation.update({
-    where: {
-      id: conversationId,
-    },
-    data: {
-      relatedExternalJobId: normalizedJob.externalJobId || null,
-      relatedCompanyName: normalizedJob.company || metadata.companyName || null,
-      metadata: {
-        ...metadata,
-        companyName: normalizedJob.company || metadata.companyName || "",
-        job: normalizedJob,
+  await withDbRetry(() =>
+    db.chatConversation.update({
+      where: {
+        id: conversationId,
       },
-    },
-  });
+      data: {
+        relatedExternalJobId: normalizedJob.externalJobId || null,
+        relatedCompanyName: normalizedJob.company || metadata.companyName || null,
+        metadata: {
+          ...metadata,
+          companyName: normalizedJob.company || metadata.companyName || "",
+          job: normalizedJob,
+        },
+      },
+    })
+  );
 
   revalidatePath("/career-chat");
 
@@ -989,24 +1009,11 @@ export async function syncConversationJobState(input) {
 }
 
 export async function clearConversationContext(input) {
-  const { userId } = await auth();
-
-  if (!userId) {
-    throw new Error("Unauthorized");
-  }
-
-  const user = await db.user.findUnique({
-    where: {
-      clerkUserId: userId,
-    },
+  const user = await requireDbUser({
     select: {
       id: true,
     },
   });
-
-  if (!user) {
-    throw new Error("User not found");
-  }
 
   const conversationId = cleanString(input?.conversationId);
 
@@ -1014,12 +1021,14 @@ export async function clearConversationContext(input) {
     throw new Error("Conversation id is required");
   }
 
-  const conversation = await db.chatConversation.findFirst({
-    where: {
-      id: conversationId,
-      userId: user.id,
-    },
-  });
+  const conversation = await withDbRetry(() =>
+    db.chatConversation.findFirst({
+      where: {
+        id: conversationId,
+        userId: user.id,
+      },
+    })
+  );
 
   if (!conversation) {
     throw new Error("Conversation not found");
@@ -1027,21 +1036,23 @@ export async function clearConversationContext(input) {
 
   const metadata = normalizeConversationMetadata(conversation.metadata);
 
-  await db.chatConversation.update({
-    where: {
-      id: conversationId,
-    },
-    data: {
-      scopeType: CHAT_SCOPE_TYPES.GENERAL,
-      relatedExternalJobId: null,
-      relatedCompanyName: null,
-      metadata: {
-        ...metadata,
-        companyName: "",
-        job: null,
+  await withDbRetry(() =>
+    db.chatConversation.update({
+      where: {
+        id: conversationId,
       },
-    },
-  });
+      data: {
+        scopeType: CHAT_SCOPE_TYPES.GENERAL,
+        relatedExternalJobId: null,
+        relatedCompanyName: null,
+        metadata: {
+          ...metadata,
+          companyName: "",
+          job: null,
+        },
+      },
+    })
+  );
 
   revalidatePath("/career-chat");
 
@@ -1052,24 +1063,11 @@ export async function clearConversationContext(input) {
 }
 
 export async function deleteChatConversation(input) {
-  const { userId } = await auth();
-
-  if (!userId) {
-    throw new Error("Unauthorized");
-  }
-
-  const user = await db.user.findUnique({
-    where: {
-      clerkUserId: userId,
-    },
+  const user = await requireDbUser({
     select: {
       id: true,
     },
   });
-
-  if (!user) {
-    throw new Error("User not found");
-  }
 
   const conversationId = cleanString(input?.conversationId);
 
@@ -1077,25 +1075,29 @@ export async function deleteChatConversation(input) {
     throw new Error("Conversation id is required");
   }
 
-  const conversation = await db.chatConversation.findFirst({
-    where: {
-      id: conversationId,
-      userId: user.id,
-    },
-    select: {
-      id: true,
-    },
-  });
+  const conversation = await withDbRetry(() =>
+    db.chatConversation.findFirst({
+      where: {
+        id: conversationId,
+        userId: user.id,
+      },
+      select: {
+        id: true,
+      },
+    })
+  );
 
   if (!conversation) {
     throw new Error("Conversation not found");
   }
 
-  await db.chatConversation.delete({
-    where: {
-      id: conversationId,
-    },
-  });
+  await withDbRetry(() =>
+    db.chatConversation.delete({
+      where: {
+        id: conversationId,
+      },
+    })
+  );
 
   revalidatePath("/career-chat");
 

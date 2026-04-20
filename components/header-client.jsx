@@ -68,21 +68,25 @@ export default function HeaderClient({ isSignedIn }) {
         <div className="flex items-center gap-2 md:gap-4">
           {isSignedIn ? (
             <>
-              <Link href="/dashboard">
-                <Button
-                  variant="outline"
-                  className="hidden shrink-0 items-center gap-2 md:inline-flex"
-                >
+              <Button
+                asChild
+                variant="outline"
+                className="hidden shrink-0 items-center gap-2 md:inline-flex"
+              >
+                <Link href="/dashboard">
                   <LayoutDashboard className="h-4 w-4" />
                   Industry Insights
-                </Button>
-                <Button
-                  variant="ghost"
-                  className="h-10 w-10 shrink-0 p-0 md:hidden"
-                >
+                </Link>
+              </Button>
+              <Button
+                asChild
+                variant="ghost"
+                className="h-10 w-10 shrink-0 p-0 md:hidden"
+              >
+                <Link href="/dashboard">
                   <LayoutDashboard className="h-4 w-4" />
-                </Button>
-              </Link>
+                </Link>
+              </Button>
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>

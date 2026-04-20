@@ -1,26 +1,53 @@
 "use server";
 
 import { db } from "@/lib/prisma";
-import { auth } from "@clerk/nextjs/server";
 import { generateJson, generateText } from "@/lib/gemini";
+import { requireDbUser } from "@/lib/server-user";
+import { withDbRetry } from "@/lib/prisma";
+import { z } from "zod";
 
 function cleanString(value) {
   return typeof value === "string" ? value.trim() : "";
 }
 
-export async function generateQuiz(jobContext = null) {
-  const { userId } = await auth();
-  if (!userId) throw new Error("Unauthorized");
+const quizQuestionSchema = z
+  .object({
+    question: z.string().trim().min(1),
+    options: z.array(z.string().trim().min(1)).length(4),
+    correctAnswer: z.string().trim().min(1),
+    explanation: z.string().trim().min(1),
+  })
+  .superRefine((question, context) => {
+    if (!question.options.includes(question.correctAnswer)) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Correct answer must match one of the options",
+        path: ["correctAnswer"],
+      });
+    }
+  });
 
-  const user = await db.user.findUnique({
-    where: { clerkUserId: userId },
+const quizSchema = z.object({
+  questions: z.array(quizQuestionSchema).length(10),
+});
+
+function normalizeQuizPayload(payload) {
+  const result = quizSchema.safeParse(payload);
+
+  if (!result.success) {
+    throw new Error("Generated quiz content was invalid");
+  }
+
+  return result.data.questions;
+}
+
+export async function generateQuiz(jobContext = null) {
+  const user = await requireDbUser({
     select: {
       industry: true,
       skills: true,
     },
   });
-
-  if (!user) throw new Error("User not found");
 
   const normalizedJobContext = {
     jobTitle: cleanString(jobContext?.jobTitle),
@@ -68,8 +95,7 @@ export async function generateQuiz(jobContext = null) {
 
   try {
     const quiz = await generateJson({ prompt });
-
-    return quiz.questions;
+    return normalizeQuizPayload(quiz);
   } catch (error) {
     console.error("Error generating quiz:", error);
     throw new Error("Failed to generate quiz questions");
@@ -77,18 +103,12 @@ export async function generateQuiz(jobContext = null) {
 }
 
 export async function saveQuizResult(questions, answers, score) {
-  const { userId } = await auth();
-  if (!userId) throw new Error("Unauthorized");
-
-  const user = await db.user.findUnique({
-    where: { clerkUserId: userId },
+  const user = await requireDbUser({
     select: {
       id: true,
       industry: true,
     },
   });
-
-  if (!user) throw new Error("User not found");
 
   const questionResults = questions.map((q, index) => ({
     question: q.question,
@@ -131,15 +151,17 @@ export async function saveQuizResult(questions, answers, score) {
   }
 
   try {
-    const assessment = await db.assessment.create({
-      data: {
-        userId: user.id,
-        quizScore: score,
-        questions: questionResults,
-        category: "Technical",
-        improvementTip,
-      },
-    });
+    const assessment = await withDbRetry(() =>
+      db.assessment.create({
+        data: {
+          userId: user.id,
+          quizScore: score,
+          questions: questionResults,
+          category: "Technical",
+          improvementTip,
+        },
+      })
+    );
 
     return assessment;
   } catch (error) {
@@ -149,27 +171,23 @@ export async function saveQuizResult(questions, answers, score) {
 }
 
 export async function getAssessments() {
-  const { userId } = await auth();
-  if (!userId) throw new Error("Unauthorized");
-
-  const user = await db.user.findUnique({
-    where: { clerkUserId: userId },
+  const user = await requireDbUser({
     select: {
       id: true,
     },
   });
 
-  if (!user) throw new Error("User not found");
-
   try {
-    const assessments = await db.assessment.findMany({
-      where: {
-        userId: user.id,
-      },
-      orderBy: {
-        createdAt: "asc",
-      },
-    });
+    const assessments = await withDbRetry(() =>
+      db.assessment.findMany({
+        where: {
+          userId: user.id,
+        },
+        orderBy: {
+          createdAt: "asc",
+        },
+      })
+    );
 
     return assessments;
   } catch (error) {

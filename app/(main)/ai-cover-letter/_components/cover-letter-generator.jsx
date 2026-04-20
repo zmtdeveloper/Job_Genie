@@ -39,7 +39,14 @@ export default function CoverLetterGenerator({ initialValues }) {
   } = useFetch(generateCoverLetter);
 
   const onSubmit = async (data) => {
-    const generatedLetter = await generateLetterFn(data);
+    let generatedLetter = null;
+
+    try {
+      generatedLetter = await generateLetterFn(data);
+    } catch (error) {
+      console.error("Cover letter generation error:", error);
+      return;
+    }
 
     if (generatedLetter?.id) {
       toast.success("Cover letter generated successfully!");

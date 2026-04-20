@@ -26,12 +26,12 @@ export default async function CoverLetterPage() {
     <div>
       <div className="flex flex-col md:flex-row gap-2 items-center justify-between mb-5">
         <h1 className="text-6xl font-bold gradient-title">My Cover Letters</h1>
-        <Link href="/ai-cover-letter/new">
-          <Button>
+        <Button asChild>
+          <Link href="/ai-cover-letter/new">
             <Plus className="h-4 w-4 mr-2" />
             Create New
-          </Button>
-        </Link>
+          </Link>
+        </Button>
       </div>
 
       {loadError ? (
@@ -41,9 +41,9 @@ export default async function CoverLetterPage() {
             <CardDescription>{loadError}</CardDescription>
           </CardHeader>
           <CardContent>
-            <Link href="/ai-cover-letter">
-              <Button variant="outline">Try Again</Button>
-            </Link>
+            <Button asChild variant="outline">
+              <Link href="/ai-cover-letter">Try Again</Link>
+            </Button>
           </CardContent>
         </Card>
       ) : (

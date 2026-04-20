@@ -567,12 +567,19 @@ export default function ChatbotUI({
       return;
     }
 
-    const response = await sendMessageFn({
-      conversationId: activeConversation?.id,
-      mode: activeConversation?.mode || activeMode,
-      message: normalizedInput,
-      draftContext: activeConversation ? null : draftState,
-    });
+    let response = null;
+
+    try {
+      response = await sendMessageFn({
+        conversationId: activeConversation?.id,
+        mode: activeConversation?.mode || activeMode,
+        message: normalizedInput,
+        draftContext: activeConversation ? null : draftState,
+      });
+    } catch (error) {
+      console.error("Send message error:", error);
+      return;
+    }
 
     if (!response?.conversation) {
       return;
@@ -594,9 +601,16 @@ export default function ChatbotUI({
 
   const handleClearContext = async () => {
     if (activeConversation?.id) {
-      const response = await clearConversationContextFn({
-        conversationId: activeConversation.id,
-      });
+      let response = null;
+
+      try {
+        response = await clearConversationContextFn({
+          conversationId: activeConversation.id,
+        });
+      } catch (error) {
+        console.error("Clear conversation context error:", error);
+        return;
+      }
 
       if (!response?.conversationId) {
         return;
@@ -630,7 +644,14 @@ export default function ChatbotUI({
       return;
     }
 
-    const response = await deleteConversationFn({ conversationId });
+    let response = null;
+
+    try {
+      response = await deleteConversationFn({ conversationId });
+    } catch (error) {
+      console.error("Delete conversation error:", error);
+      return;
+    }
 
     if (!response?.conversationId) {
       return;
@@ -663,7 +684,14 @@ export default function ChatbotUI({
     }
 
     if (action.type === CHAT_ACTION_TYPES.SAVE_JOB) {
-      const savedJob = await saveJobFn(job);
+      let savedJob = null;
+
+      try {
+        savedJob = await saveJobFn(job);
+      } catch (error) {
+        console.error("Save job from chat error:", error);
+        return;
+      }
 
       if (savedJob) {
         const nextJobState = {
@@ -671,10 +699,14 @@ export default function ChatbotUI({
           isSaved: true,
         };
         if (activeConversation?.id) {
-          await syncConversationJobStateFn({
-            conversationId: activeConversation.id,
-            job: nextJobState,
-          });
+          try {
+            await syncConversationJobStateFn({
+              conversationId: activeConversation.id,
+              job: nextJobState,
+            });
+          } catch (error) {
+            console.error("Sync conversation job state error:", error);
+          }
         }
         setActiveConversation((currentConversation) =>
           currentConversation
@@ -695,16 +727,23 @@ export default function ChatbotUI({
     }
 
     if (action.type === CHAT_ACTION_TYPES.MOVE_TO_APPLIED) {
-      const result = job.isSaved
-        ? await updateSavedJobFn({
-            externalJobId: job.externalJobId,
-            provider: job.provider,
-            status: "applied",
-          })
-        : await saveJobFn({
-            ...job,
-            status: "applied",
-          });
+      let result = null;
+
+      try {
+        result = job.isSaved
+          ? await updateSavedJobFn({
+              externalJobId: job.externalJobId,
+              provider: job.provider,
+              status: "applied",
+            })
+          : await saveJobFn({
+              ...job,
+              status: "applied",
+            });
+      } catch (error) {
+        console.error("Move job to applied error:", error);
+        return;
+      }
 
       if (result) {
         const nextJobState = {
@@ -713,10 +752,14 @@ export default function ChatbotUI({
           status: "applied",
         };
         if (activeConversation?.id) {
-          await syncConversationJobStateFn({
-            conversationId: activeConversation.id,
-            job: nextJobState,
-          });
+          try {
+            await syncConversationJobStateFn({
+              conversationId: activeConversation.id,
+              job: nextJobState,
+            });
+          } catch (error) {
+            console.error("Sync conversation job state error:", error);
+          }
         }
         setActiveConversation((currentConversation) =>
           currentConversation
@@ -744,16 +787,23 @@ export default function ChatbotUI({
         return;
       }
 
-      const result = job.isSaved
-        ? await updateSavedJobFn({
-            externalJobId: job.externalJobId,
-            provider: job.provider,
-            notes: note,
-          })
-        : await saveJobFn({
-            ...job,
-            notes: note,
-          });
+      let result = null;
+
+      try {
+        result = job.isSaved
+          ? await updateSavedJobFn({
+              externalJobId: job.externalJobId,
+              provider: job.provider,
+              notes: note,
+            })
+          : await saveJobFn({
+              ...job,
+              notes: note,
+            });
+      } catch (error) {
+        console.error("Add tracker note error:", error);
+        return;
+      }
 
       if (result) {
         const nextJobState = {
@@ -762,10 +812,14 @@ export default function ChatbotUI({
           notes: result.notes || note,
         };
         if (activeConversation?.id) {
-          await syncConversationJobStateFn({
-            conversationId: activeConversation.id,
-            job: nextJobState,
-          });
+          try {
+            await syncConversationJobStateFn({
+              conversationId: activeConversation.id,
+              job: nextJobState,
+            });
+          } catch (error) {
+            console.error("Sync conversation job state error:", error);
+          }
         }
         setActiveConversation((currentConversation) =>
           currentConversation

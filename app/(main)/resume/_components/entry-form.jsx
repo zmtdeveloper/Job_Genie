@@ -80,31 +80,29 @@ export function EntryForm({ type, entries, onChange }) {
     loading: isImproving,
     fn: improveWithAIFn,
     data: improvedContent,
-    error: improveError,
   } = useFetch(improveWithAI);
 
-  // Add this effect to handle the improvement result
   useEffect(() => {
     if (improvedContent && !isImproving) {
       setValue("description", improvedContent);
       toast.success("Description improved successfully!");
     }
-    if (improveError) {
-      toast.error(improveError.message || "Failed to improve description");
-    }
-  }, [improvedContent, improveError, isImproving, setValue]);
+  }, [improvedContent, isImproving, setValue]);
 
-  // Replace handleImproveDescription with this
   const handleImproveDescription = async () => {
     if (!description) {
       toast.error("Please enter a description first");
       return;
     }
 
-    await improveWithAIFn({
-      current: description,
-      type: type.toLowerCase(), // 'experience', 'education', or 'project'
-    });
+    try {
+      await improveWithAIFn({
+        current: description,
+        type: type.toLowerCase(),
+      });
+    } catch (error) {
+      console.error("Improve description error:", error);
+    }
   };
 
   return (
