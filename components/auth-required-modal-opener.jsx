@@ -1,11 +1,14 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { useClerk } from "@clerk/nextjs";
+import { useAuth, useClerk } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
 
 export default function AuthRequiredModalOpener({
   redirectAfterSignIn = "/dashboard",
 }) {
+  const router = useRouter();
+  const { isSignedIn } = useAuth();
   const { loaded, openSignIn } = useClerk();
   const hasOpenedRef = useRef(false);
 
@@ -16,6 +19,12 @@ export default function AuthRequiredModalOpener({
 
     hasOpenedRef.current = true;
 
+    if (isSignedIn) {
+      window.history.replaceState({}, "", redirectAfterSignIn);
+      router.replace(redirectAfterSignIn);
+      return;
+    }
+
     openSignIn({
       forceRedirectUrl: redirectAfterSignIn,
       fallbackRedirectUrl: redirectAfterSignIn,
@@ -24,7 +33,7 @@ export default function AuthRequiredModalOpener({
     });
 
     window.history.replaceState({}, "", "/");
-  }, [loaded, openSignIn, redirectAfterSignIn]);
+  }, [isSignedIn, loaded, openSignIn, redirectAfterSignIn, router]);
 
   return null;
 }

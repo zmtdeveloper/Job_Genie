@@ -334,7 +334,10 @@ function ResultCard({ job, isSelected, onSelect }) {
         <div className="space-y-2">
           <Progress
             value={job.matchScore || 0}
-            className={cn("h-2", isSelected && "[&>div]:bg-slate-900")}
+            className={cn(
+              "h-2",
+              isSelected && "bg-white/15 [&>div]:bg-sky-300"
+            )}
           />
           <div
             className={cn(

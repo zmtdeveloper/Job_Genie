@@ -18,7 +18,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { generateCoverLetter } from "@/actions/cover-letter";
 import useFetch from "@/hooks/use-fetch";
 import { coverLetterSchema } from "@/app/lib/schema";
-import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 export default function CoverLetterGenerator({ initialValues }) {
@@ -37,23 +36,16 @@ export default function CoverLetterGenerator({ initialValues }) {
   const {
     loading: generating,
     fn: generateLetterFn,
-    data: generatedLetter,
   } = useFetch(generateCoverLetter);
 
-  // Update content when letter is generated
-  useEffect(() => {
-    if (generatedLetter) {
+  const onSubmit = async (data) => {
+    const generatedLetter = await generateLetterFn(data);
+
+    if (generatedLetter?.id) {
       toast.success("Cover letter generated successfully!");
       router.push(`/ai-cover-letter/${generatedLetter.id}`);
+      router.refresh();
       reset(initialValues);
-    }
-  }, [generatedLetter, initialValues, reset, router]);
-
-  const onSubmit = async (data) => {
-    try {
-      await generateLetterFn(data);
-    } catch (error) {
-      toast.error(error.message || "Failed to generate cover letter");
     }
   };
 

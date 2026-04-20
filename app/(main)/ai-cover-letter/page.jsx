@@ -2,10 +2,25 @@ import { getCoverLetters } from "@/actions/cover-letter";
 import Link from "next/link";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import CoverLetterList from "./_components/cover-letter-list";
 
 export default async function CoverLetterPage() {
-  const coverLetters = await getCoverLetters();
+  let coverLetters = [];
+  let loadError = "";
+
+  try {
+    coverLetters = await getCoverLetters();
+  } catch (error) {
+    loadError =
+      error?.message || "Unable to load your cover letters right now.";
+  }
 
   return (
     <div>
@@ -19,7 +34,21 @@ export default async function CoverLetterPage() {
         </Link>
       </div>
 
-      <CoverLetterList coverLetters={coverLetters} />
+      {loadError ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Cover letters are temporarily unavailable</CardTitle>
+            <CardDescription>{loadError}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Link href="/ai-cover-letter">
+              <Button variant="outline">Try Again</Button>
+            </Link>
+          </CardContent>
+        </Card>
+      ) : (
+        <CoverLetterList coverLetters={coverLetters} />
+      )}
     </div>
   );
 }

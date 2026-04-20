@@ -1,4 +1,5 @@
 import { auth } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -28,10 +29,14 @@ export default async function LandingPage({ searchParams }) {
       ? resolvedSearchParams.from
       : "/dashboard";
 
+  if (showAuthNotice && userId) {
+    redirect(redirectAfterSignIn);
+  }
+
   return (
     <>
       <div className="grid-background"></div>
-      {showAuthNotice ? (
+      {showAuthNotice && !userId ? (
         <AuthRequiredModalOpener
           redirectAfterSignIn={redirectAfterSignIn}
         />
