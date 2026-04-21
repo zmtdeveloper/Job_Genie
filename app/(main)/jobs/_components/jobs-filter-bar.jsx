@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  Building2,
   CircleDot,
   Globe2,
   Layers3,
@@ -36,37 +35,37 @@ export default function JobsFilterBar({
       <CardContent className="p-4 md:p-5">
         <form
           onSubmit={onSubmit}
-          className="grid gap-3 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1.1fr)_210px_210px_190px_170px]"
+          className="grid items-end gap-3 xl:grid-cols-[minmax(0,1.7fr)_210px_210px_auto]"
         >
           <div className="jobs-glow-inner rounded-[26px] border border-border/70 bg-card/80 p-3 shadow-none">
-            <div className="mb-3 flex items-center gap-2 text-[11px] uppercase tracking-[0.28em] text-muted-foreground">
-              <CircleDot className="h-3.5 w-3.5" />
-              <span>Role</span>
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.28em] text-muted-foreground">
+                <CircleDot className="h-3.5 w-3.5" />
+                <span>Role</span>
+              </div>
+              <p className="hidden text-[11px] uppercase tracking-[0.22em] text-muted-foreground/80 md:block">
+                Search instantly
+              </p>
             </div>
-            <div className="relative">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                value={values.query}
-                onChange={(event) => onChange("query", event.target.value)}
-                placeholder="Search by role, e.g. Product Designer"
-                className="jobs-glow-inner h-12 rounded-[20px] border-border/70 bg-background/80 pl-10 shadow-none"
-              />
-            </div>
-          </div>
+            <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_152px]">
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={values.query}
+                  onChange={(event) => onChange("query", event.target.value)}
+                  placeholder="Search by role, e.g. Product Designer"
+                  className="jobs-glow-inner h-12 rounded-[20px] border-border/70 bg-background/80 pl-10 shadow-none"
+                />
+              </div>
 
-          <div className="jobs-glow-inner rounded-[26px] border border-border/70 bg-card/80 p-3 shadow-none">
-            <div className="mb-3 flex items-center gap-2 text-[11px] uppercase tracking-[0.28em] text-muted-foreground">
-              <Building2 className="h-3.5 w-3.5" />
-              <span>Company</span>
-            </div>
-            <div className="relative">
-              <Building2 className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                value={values.company}
-                onChange={(event) => onChange("company", event.target.value)}
-                placeholder="Optional company filter"
-                className="jobs-glow-inner h-12 rounded-[20px] border-border/70 bg-background/80 pl-10 shadow-none"
-              />
+              <Button
+                type="submit"
+                disabled={isSearching}
+                className="jobs-glow-button jobs-glow-button-primary h-12 rounded-[20px] px-5 text-sm font-semibold"
+              >
+                <Search className="h-4 w-4" />
+                {isSearching ? "Searching..." : "Search"}
+              </Button>
             </div>
           </div>
 
@@ -114,24 +113,17 @@ export default function JobsFilterBar({
             </Select>
           </div>
 
-          <Button
-            type="submit"
-            disabled={isSearching}
-            className="jobs-glow-button jobs-glow-active h-full min-h-[104px] rounded-[26px] px-6 text-base"
-          >
-            <Search className="h-4 w-4" />
-            {isSearching ? "Searching..." : "Search Roles"}
-          </Button>
-
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={onReset}
-            className="jobs-glow-button h-full min-h-[104px] rounded-[26px] border border-border/70 bg-card/70 px-6 text-base hover:bg-accent/60"
-          >
-            <RefreshCcw className="h-4 w-4" />
-            Clear Filters
-          </Button>
+          <div className="flex flex-col gap-2 xl:justify-end">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={onReset}
+              className="jobs-glow-button h-12 rounded-[18px] border border-border/70 bg-card/70 px-4 text-sm font-medium hover:bg-accent/60"
+            >
+              <RefreshCcw className="h-4 w-4" />
+              Clear
+            </Button>
+          </div>
         </form>
       </CardContent>
     </Card>

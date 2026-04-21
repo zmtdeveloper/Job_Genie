@@ -20,11 +20,19 @@ export default function JobsLoadingShell() {
       </Card>
 
       <Card className="jobs-glow-panel sticky top-20 z-20 border shadow-none">
-        <CardContent className="grid gap-3 p-4 md:grid-cols-[1.3fr_1fr_1fr_auto]">
+        <CardContent className="grid items-end gap-3 p-4 md:grid-cols-[1.5fr_1fr_1fr_auto]">
+          <div className="space-y-3">
+            <Skeleton className="h-4 w-32" />
+            <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_152px]">
+              <Skeleton className="h-12 rounded-[20px]" />
+              <Skeleton className="h-12 rounded-[20px]" />
+            </div>
+          </div>
           <Skeleton className="h-11" />
           <Skeleton className="h-11" />
-          <Skeleton className="h-11" />
-          <Skeleton className="h-11 w-24" />
+          <div className="flex gap-2 md:justify-end">
+            <Skeleton className="h-12 w-24 rounded-[18px]" />
+          </div>
         </CardContent>
       </Card>
 

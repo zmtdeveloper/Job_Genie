@@ -135,7 +135,7 @@ export default function JobsDetailPanel({
         <CardHeader>
           <CardTitle className="text-xl gradient-title">Role Details</CardTitle>
           <CardDescription>
-            Pick a role from the left panel to open its details, ATS snapshot, and application actions.
+            Open a role from the results grid to review its details, ATS snapshot, and application actions.
           </CardDescription>
         </CardHeader>
       </Card>
@@ -188,7 +188,7 @@ export default function JobsDetailPanel({
               <Progress value={job.matchScore || 0} className="mt-2.5 h-2.5" />
             </div>
 
-            <div className="jobs-glow-active min-w-[132px] rounded-2xl border border-sky-400/20 bg-background p-3 shadow-none">
+            <div className="jobs-glow-active min-w-[132px] rounded-2xl border border-white/12 bg-background p-3 shadow-none">
               <p className="text-xs uppercase tracking-[0.24em] text-muted-foreground">
                 ATS Score
               </p>
@@ -287,19 +287,23 @@ export default function JobsDetailPanel({
           </div>
         ) : null}
 
-        <Card className="jobs-glow-panel border border-border/70 shadow-none">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg">Application Tracker</CardTitle>
+        <Card className="jobs-glow-panel overflow-hidden rounded-[30px] border border-border/70 shadow-none">
+          <CardHeader className="border-b border-border/60 bg-muted/20 pb-4">
+            <CardTitle className="text-xl gradient-title md:text-2xl">
+              Application Tracker
+            </CardTitle>
             <CardDescription>
               Keep this role inside your pipeline and update its stage as you move forward.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-3 sm:grid-cols-[220px_minmax(0,1fr)]">
-              <div className="space-y-2">
-                <p className="text-sm font-medium">Status</p>
+          <CardContent className="space-y-5 p-5">
+            <div className="grid gap-4 lg:grid-cols-[240px_minmax(0,1fr)]">
+              <div className="jobs-glow-inner rounded-[24px] border border-border/70 bg-background/70 p-4 shadow-none">
+                <p className="mb-3 text-xs font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+                  Status
+                </p>
                 <Select value={job.status} onValueChange={onStatusChange}>
-                  <SelectTrigger className="jobs-glow-inner">
+                  <SelectTrigger className="jobs-glow-inner h-12 rounded-[18px]">
                     <SelectValue placeholder="Select status" />
                   </SelectTrigger>
                   <SelectContent>
@@ -312,19 +316,21 @@ export default function JobsDetailPanel({
                 </Select>
               </div>
 
-              <div className="space-y-2">
-                <p className="text-sm font-medium">Application Notes</p>
+              <div className="jobs-glow-inner rounded-[24px] border border-border/70 bg-background/70 p-4 shadow-none">
+                <p className="mb-3 text-xs font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+                  Application Notes
+                </p>
                 <Textarea
                   value={notesDraft}
                   onChange={(event) => onNotesChange(event.target.value)}
                   placeholder="Add interview notes, recruiter updates, or next steps..."
-                  className="jobs-glow-inner min-h-24"
+                  className="jobs-glow-inner min-h-32 rounded-[18px]"
                 />
               </div>
             </div>
 
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-sm text-muted-foreground">
+            <div className="jobs-glow-inner flex flex-col gap-4 rounded-[24px] border border-border/70 bg-background/70 p-4 shadow-none sm:flex-row sm:items-center sm:justify-between">
+              <p className="max-w-2xl text-sm text-muted-foreground">
                 Use <span className="font-medium text-foreground">Archived</span>{" "}
                 to keep a record, or remove the role fully when you no longer need it.
               </p>
@@ -336,7 +342,7 @@ export default function JobsDetailPanel({
                     variant="outline"
                     onClick={onRemoveSavedJob}
                     disabled={isRemoving}
-                    className="jobs-glow-button jobs-glow-button-danger h-10 border-red-300/30 bg-red-950/80 font-medium text-red-50 hover:bg-red-950/90 hover:text-white"
+                    className="jobs-glow-button jobs-glow-button-danger h-11 border-red-300/30 bg-red-950/80 px-5 font-medium text-red-50 hover:bg-red-950/90 hover:text-white"
                   >
                     <Trash2 className="h-4 w-4" />
                     {isRemoving ? "Removing..." : "Remove From Tracker"}
@@ -346,7 +352,7 @@ export default function JobsDetailPanel({
                 <Button
                   onClick={onSaveNotes}
                   disabled={isUpdating}
-                  className="jobs-glow-button"
+                  className="jobs-glow-button jobs-glow-active h-11 px-5 font-semibold"
                 >
                   <NotebookPen className="h-4 w-4" />
                   Save Tracker Notes

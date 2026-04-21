@@ -4,12 +4,7 @@ import { useEffect, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  Building2,
-  BriefcaseBusiness,
-  Layers3,
-  Loader2,
-} from "lucide-react";
+import { BriefcaseBusiness, Layers3, Loader2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -67,7 +62,8 @@ export default function JobsSearchDialog({
     const params = new URLSearchParams();
 
     Object.entries({
-      ...values,
+      query: values.query,
+      provider: values.provider,
       locality: defaults.locality,
     }).forEach(([key, value]) => {
       const normalizedValue = value?.trim?.() ?? value;
@@ -125,43 +121,28 @@ export default function JobsSearchDialog({
             )}
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="company">Company Filter</Label>
-              <div className="relative">
-                <Building2 className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  id="company"
-                  placeholder="Optional"
-                  className="pl-9"
-                  {...register("company")}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="provider">Provider</Label>
-              <Select
-                value={providerValue || defaults.provider}
-                onValueChange={(nextValue) =>
-                  setValue("provider", nextValue, { shouldValidate: true })
-                }
-              >
-                <SelectTrigger id="provider" className="h-11">
-                  <div className="flex items-center gap-2">
-                    <Layers3 className="h-4 w-4 text-muted-foreground" />
-                    <SelectValue placeholder="Choose provider" />
-                  </div>
-                </SelectTrigger>
-                <SelectContent>
-                  {providerOptions.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="provider">Provider</Label>
+            <Select
+              value={providerValue || defaults.provider}
+              onValueChange={(nextValue) =>
+                setValue("provider", nextValue, { shouldValidate: true })
+              }
+            >
+              <SelectTrigger id="provider" className="h-11">
+                <div className="flex items-center gap-2">
+                  <Layers3 className="h-4 w-4 text-muted-foreground" />
+                  <SelectValue placeholder="Choose provider" />
+                </div>
+              </SelectTrigger>
+              <SelectContent>
+                {providerOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="flex justify-end gap-2">

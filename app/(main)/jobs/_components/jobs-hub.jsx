@@ -7,8 +7,8 @@ import {
   ArrowRight,
   Bookmark,
   Clock3,
+  Eye,
   ExternalLink,
-  Loader2,
   MapPin,
 } from "lucide-react";
 import {
@@ -19,7 +19,6 @@ import {
 } from "@/actions/jobs";
 import {
   DEFAULT_JOB_STATUS,
-  JOB_MARKET_LABELS,
   JOB_TABS,
 } from "@/lib/jobs/constants";
 import {
@@ -28,7 +27,6 @@ import {
   parseRelativeAge,
   splitExternalJobId,
 } from "@/lib/jobs/utils";
-import { cn } from "@/lib/utils";
 import useFetch from "@/hooks/use-fetch";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -39,6 +37,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import JobsDetailPanel from "./jobs-detail-panel";
@@ -170,6 +174,28 @@ function getVisibleJobs(tab, liveJobs, savedJobs) {
   return liveJobs;
 }
 
+function buildJobLookup(liveJobs, savedJobs) {
+  const lookup = new Map();
+
+  liveJobs.forEach((job) => {
+    const jobKey = getJobKey(job);
+
+    if (jobKey) {
+      lookup.set(jobKey, job);
+    }
+  });
+
+  savedJobs.forEach((job) => {
+    const jobKey = getJobKey(job);
+
+    if (jobKey) {
+      lookup.set(jobKey, job);
+    }
+  });
+
+  return lookup;
+}
+
 function buildCoverLetterHref(job) {
   const params = new URLSearchParams({
     companyName: cleanString(job.company),
@@ -214,47 +240,25 @@ function enrichDisplayJob(job) {
   };
 }
 
-function trackerSummaryFromState(savedJobs, statusOptions) {
-  return statusOptions.map((option) => ({
-    ...option,
-    count: savedJobs.filter((job) => job.status === option.value).length,
-  }));
-}
-
-function ResultCard({ job, isSelected, onSelect }) {
+function ResultCard({ job, onView }) {
   return (
-    <button
-      type="button"
-      onClick={onSelect}
-      className={cn(
-        "w-full rounded-2xl border text-left transition-all duration-200",
-        isSelected
-          ? "jobs-glow-active border-sky-400/30 bg-slate-950/5 shadow-none"
-          : "jobs-glow-inner border-border/70 bg-card shadow-none hover:border-sky-400/20"
-      )}
-    >
-      <div className="space-y-3.5 p-4">
+    <Card className="jobs-glow-inner h-full rounded-[26px] border border-border/70 bg-card/80 shadow-none transition-all duration-200 hover:border-white/15">
+      <CardContent className="flex h-full flex-col gap-4 p-4 md:p-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="space-y-2">
             <div className="flex flex-wrap items-center gap-2">
               <Badge
-                variant={isSelected ? "secondary" : "outline"}
-                className={cn(isSelected && "bg-slate-900 text-white")}
+                variant="outline"
               >
                 {job.company}
               </Badge>
               {job.providerName ? (
-                <Badge variant={isSelected ? "secondary" : "outline"}>
+                <Badge variant="outline">
                   {job.providerName}
                 </Badge>
               ) : null}
               {job.isSaved ? (
-                <Badge
-                  className={cn(
-                    "gap-1",
-                    isSelected && "bg-slate-900 text-white hover:bg-slate-900"
-                  )}
-                >
+                <Badge className="gap-1">
                   <Bookmark className="h-3.5 w-3.5" />
                   {job.status === "saved" ? "Tracked" : job.status}
                 </Badge>
@@ -262,20 +266,12 @@ function ResultCard({ job, isSelected, onSelect }) {
             </div>
 
             <h3
-              className={cn(
-                "text-lg font-semibold leading-tight",
-                isSelected && "text-foreground"
-              )}
+              className="text-lg font-semibold leading-tight"
             >
               {job.title}
             </h3>
 
-            <div
-              className={cn(
-                "flex flex-wrap gap-3 text-sm text-muted-foreground",
-                isSelected && "text-muted-foreground"
-              )}
-            >
+            <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
               <span className="inline-flex items-center gap-1">
                 <MapPin className="h-4 w-4" />
                 {job.location || "Location not listed"}
@@ -289,75 +285,54 @@ function ResultCard({ job, isSelected, onSelect }) {
             </div>
           </div>
 
-          <div
-            className={cn(
-              "min-w-[104px] rounded-2xl border border-current/10 bg-black/5 p-3 text-right",
-              isSelected ? "jobs-glow-active" : "jobs-glow-inner"
-            )}
-          >
+          <div className="jobs-glow-inner min-w-[104px] rounded-[22px] border border-border/70 bg-background/80 p-3 text-right">
             <p
-              className={cn(
-                "text-xs uppercase tracking-[0.24em] text-muted-foreground",
-                isSelected && "text-muted-foreground"
-              )}
+              className="text-xs uppercase tracking-[0.24em] text-muted-foreground"
             >
               Match
             </p>
             <p className="mt-1 text-2xl font-semibold">{job.matchScore || 0}</p>
-            <p
-              className={cn(
-                "text-xs text-muted-foreground",
-                isSelected && "text-muted-foreground"
-              )}
-            >
-              {job.matchLevel}
-            </p>
+            <p className="text-xs text-muted-foreground">{job.matchLevel}</p>
           </div>
         </div>
 
         <div className="flex flex-wrap gap-2">
           {job.salary ? (
-            <Badge variant={isSelected ? "secondary" : "outline"}>
+            <Badge variant="outline">
               {job.salary}
             </Badge>
           ) : null}
           {job.jobType ? (
-            <Badge variant={isSelected ? "secondary" : "outline"}>
+            <Badge variant="outline">
               {job.jobType}
             </Badge>
           ) : null}
           {isRemoteRole(job) ? (
-            <Badge variant={isSelected ? "secondary" : "outline"}>Remote</Badge>
+            <Badge variant="outline">Remote</Badge>
           ) : null}
         </div>
 
-        <div className="space-y-2">
-          <Progress
-            value={job.matchScore || 0}
-            className={cn(
-              "h-2",
-              isSelected && "bg-white/15 [&>div]:bg-sky-300"
-            )}
-          />
-          <div
-            className={cn(
-              "space-y-1 text-sm text-muted-foreground",
-              isSelected && "text-muted-foreground"
-            )}
-          >
-            {(job.matchReasons || []).slice(0, 2).map((reason) => (
-              <p key={reason}>{reason}</p>
-            ))}
+        <div className="mt-auto flex items-center gap-3">
+          <div className="min-w-0 flex-1">
+            <Progress value={job.matchScore || 0} className="h-1.5" />
           </div>
+          <Button
+            type="button"
+            onClick={onView}
+            className="jobs-glow-button jobs-glow-button-primary h-10 shrink-0 rounded-[18px] px-4 text-sm font-semibold"
+          >
+            <Eye className="h-4 w-4" />
+            View Job
+          </Button>
         </div>
-      </div>
-    </button>
+      </CardContent>
+    </Card>
   );
 }
 
 function EmptyTabState({ title, description, actionLabel, onAction }) {
   return (
-    <Card className="jobs-glow-panel border-dashed shadow-none">
+    <Card className="jobs-glow-inner rounded-[26px] border border-dashed border-border/70 bg-card/80 shadow-none">
       <CardHeader>
         <CardTitle>{title}</CardTitle>
         <CardDescription>{description}</CardDescription>
@@ -386,16 +361,17 @@ export default function JobsHub({
   );
   const [filters, setFilters] = useState({
     provider: results.criteria.provider ?? defaults.provider,
-    company: results.criteria.company ?? defaults.company,
+    company: "",
     query: results.criteria.query ?? defaults.query,
     locality: results.criteria.locality ?? defaults.locality,
   });
   const [liveJobs, setLiveJobs] = useState(results.jobs);
   const [savedJobsState, setSavedJobsState] = useState(savedJobs);
   const [activeTab, setActiveTab] = useState(getInitialTab(results, savedJobs));
-  const [selectedJobKey, setSelectedJobKey] = useState(
+  const [activeJobKey, setActiveJobKey] = useState(
     getInitialSelectionKey(results, savedJobs)
   );
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [detailCache, setDetailCache] = useState(buildDetailCache(savedJobs));
   const [notesDrafts, setNotesDrafts] = useState({});
   const [loadingDetailKey, setLoadingDetailKey] = useState("");
@@ -405,54 +381,42 @@ export default function JobsHub({
   const { loading: updatingJob, fn: updateSavedJobFn } = useFetch(updateSavedJob);
   const { loading: removingJob, fn: deleteSavedJobFn } = useFetch(deleteSavedJob);
 
-  const effectiveTrackerSummary = useMemo(
-    () => trackerSummaryFromState(savedJobsState, statusOptions),
-    [savedJobsState, statusOptions]
-  );
-
   const visibleJobs = useMemo(
     () => getVisibleJobs(activeTab, liveJobs, savedJobsState),
     [activeTab, liveJobs, savedJobsState]
   );
-  const effectiveSelectedJobKey = useMemo(() => {
-    if (!visibleJobs.length) {
-      return "";
-    }
-
-    if (visibleJobs.some((job) => getJobKey(job) === selectedJobKey)) {
-      return selectedJobKey;
-    }
-
-    return getJobKey(visibleJobs[0]);
-  }, [selectedJobKey, visibleJobs]);
-
-  const selectedJob = useMemo(
-    () =>
-      visibleJobs.find((job) => getJobKey(job) === effectiveSelectedJobKey) ||
-      null,
-    [effectiveSelectedJobKey, visibleJobs]
+  const jobsByKey = useMemo(
+    () => buildJobLookup(liveJobs, savedJobsState),
+    [liveJobs, savedJobsState]
   );
+  const activeJob = useMemo(
+    () => jobsByKey.get(activeJobKey) || null,
+    [activeJobKey, jobsByKey]
+  );
+  const activeJobCache = activeJobKey ? detailCache[activeJobKey] : null;
 
-  const selectedJobDetail = useMemo(() => {
-    const cacheEntry = selectedJob ? detailCache[getJobKey(selectedJob)] : null;
+  const activeJobDetail = useMemo(() => {
+    if (!activeJob && !activeJobCache) {
+      return null;
+    }
+
     return enrichDisplayJob({
-      ...(selectedJob || {}),
-      ...(cacheEntry || {}),
+      ...(activeJob || {}),
+      ...(activeJobCache || {}),
       resumeAvailable:
-        cacheEntry?.resumeAvailable ??
-        selectedJob?.resumeAvailable ??
+        activeJobCache?.resumeAvailable ??
+        activeJob?.resumeAvailable ??
         results.profileSummary.hasResume,
       detailLoaded:
-        cacheEntry?.detailLoaded ??
-        selectedJob?.detailLoaded ??
-        jobHasDetailedSnapshot(selectedJob || cacheEntry),
+        activeJobCache?.detailLoaded ??
+        activeJob?.detailLoaded ??
+        jobHasDetailedSnapshot(activeJob || activeJobCache),
     });
-  }, [detailCache, results.profileSummary.hasResume, selectedJob]);
-  const notesDraft =
-    notesDrafts[effectiveSelectedJobKey] ?? selectedJobDetail?.notes ?? "";
+  }, [activeJob, activeJobCache, results.profileSummary.hasResume]);
+  const notesDraft = notesDrafts[activeJobKey] ?? activeJobDetail?.notes ?? "";
 
-  const selectedKey = getJobKey(selectedJobDetail);
-  const isDetailLoading = Boolean(selectedKey) && loadingDetailKey === selectedKey;
+  const isDetailLoading =
+    Boolean(activeJobKey) && loadingDetailKey === activeJobKey;
 
   const handleFilterChange = (field, value) => {
     setFilters((currentFilters) => ({
@@ -464,7 +428,11 @@ export default function JobsHub({
   const handleSearch = () => {
     const params = new URLSearchParams();
 
-    Object.entries(filters).forEach(([key, value]) => {
+    Object.entries({
+      query: filters.query,
+      provider: filters.provider,
+      locality: filters.locality,
+    }).forEach(([key, value]) => {
       const normalizedValue = value?.trim?.() ?? value;
 
       if (normalizedValue) {
@@ -484,6 +452,11 @@ export default function JobsHub({
     handleSearch();
   };
 
+  const handleOpenJob = (jobKey) => {
+    setActiveJobKey(jobKey);
+    setIsDetailOpen(true);
+  };
+
   const handleReset = () => {
     setFilters({
       provider: defaults.provider,
@@ -498,11 +471,11 @@ export default function JobsHub({
   };
 
   const handleLoadDetail = async () => {
-    if (!selectedJobDetail) {
+    if (!activeJobDetail) {
       return;
     }
 
-    const detailKey = getJobKey(selectedJobDetail);
+    const detailKey = getJobKey(activeJobDetail);
     const cachedDetail = detailCache[detailKey];
 
     if (cachedDetail?.detailLoaded || jobHasDetailedSnapshot(cachedDetail)) {
@@ -512,8 +485,8 @@ export default function JobsHub({
     setLoadingDetailKey(detailKey);
     const detail = await getJobDetail({
       jobId: detailKey,
-      locality: selectedJobDetail.locality || results.criteria.locality,
-      fallbackJob: selectedJobDetail,
+      locality: activeJobDetail.locality || results.criteria.locality,
+      fallbackJob: activeJobDetail,
     }).catch((loadError) => {
       toast.error(loadError.message || "Unable to load full role details");
       return null;
@@ -549,14 +522,14 @@ export default function JobsHub({
   };
 
   const handleSaveJob = async () => {
-    if (!selectedJobDetail) {
+    if (!activeJobDetail) {
       return;
     }
 
     let savedJob = null;
 
     try {
-      savedJob = await saveJobFn(selectedJobDetail);
+      savedJob = await saveJobFn(activeJobDetail);
     } catch (error) {
       console.error("Save job error:", error);
       return;
@@ -571,21 +544,21 @@ export default function JobsHub({
   };
 
   const handleStatusChange = async (nextStatus) => {
-    if (!selectedJobDetail) {
+    if (!activeJobDetail) {
       return;
     }
 
     let savedJob = null;
 
     try {
-      if (selectedJobDetail.isSaved) {
+      if (activeJobDetail.isSaved) {
         savedJob = await updateSavedJobFn({
-          externalJobId: selectedJobDetail.externalJobId,
+          externalJobId: activeJobDetail.externalJobId,
           status: nextStatus,
         });
       } else {
         savedJob = await saveJobFn({
-          ...selectedJobDetail,
+          ...activeJobDetail,
           status: nextStatus,
         });
       }
@@ -603,21 +576,21 @@ export default function JobsHub({
   };
 
   const handleSaveNotes = async () => {
-    if (!selectedJobDetail) {
+    if (!activeJobDetail) {
       return;
     }
 
     let savedJob = null;
 
     try {
-      if (selectedJobDetail.isSaved) {
+      if (activeJobDetail.isSaved) {
         savedJob = await updateSavedJobFn({
-          externalJobId: selectedJobDetail.externalJobId,
+          externalJobId: activeJobDetail.externalJobId,
           notes: notesDraft,
         });
       } else {
         savedJob = await saveJobFn({
-          ...selectedJobDetail,
+          ...activeJobDetail,
           notes: notesDraft,
         });
       }
@@ -639,12 +612,12 @@ export default function JobsHub({
   };
 
   const handleRemoveSavedJob = async () => {
-    if (!selectedJobDetail?.isSaved) {
+    if (!activeJobDetail?.isSaved) {
       return;
     }
 
     const shouldDelete = window.confirm(
-      `Remove "${selectedJobDetail.title}" from your tracker?`
+      `Remove "${activeJobDetail.title}" from your tracker?`
     );
 
     if (!shouldDelete) {
@@ -655,8 +628,8 @@ export default function JobsHub({
 
     try {
       deletedJob = await deleteSavedJobFn({
-        externalJobId: selectedJobDetail.externalJobId,
-        provider: selectedJobDetail.provider,
+        externalJobId: activeJobDetail.externalJobId,
+        provider: activeJobDetail.provider,
       });
     } catch (error) {
       console.error("Delete saved job error:", error);
@@ -694,11 +667,6 @@ export default function JobsHub({
       value: JOB_TABS.TOP,
       label: "Top Match",
       count: liveJobs.length,
-    },
-    {
-      value: JOB_TABS.RECENT,
-      label: "Recent",
-      count: liveJobs.filter((job) => parseRelativeAge(job.postedAt) != null).length,
     },
     {
       value: JOB_TABS.REMOTE,
@@ -742,27 +710,27 @@ export default function JobsHub({
         </Card>
       ) : null}
 
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(340px,0.92fr)]">
-        <Card className="jobs-glow-panel border border-border/70 shadow-none">
-          <CardHeader className="space-y-4 border-b bg-muted/20">
-            <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-              <div>
-                <CardTitle className="text-2xl gradient-title md:text-3xl">
-                  {activeTab === JOB_TABS.SAVED
-                    ? "Application Tracker"
-                    : results.criteria.query
-                      ? `${results.criteria.query} results`
-                      : "Browse your jobs workspace"}
-                </CardTitle>
-                <CardDescription className="mt-2">
-                  {activeTab === JOB_TABS.SAVED
-                    ? "Saved jobs, pipeline stages, and follow-up notes live here."
-                    : `Showing ${visibleJobs.length} roles across top match, recent, and remote views from ${results.providerName}.`}
-                </CardDescription>
-              </div>
+      <Card className="jobs-glow-panel overflow-hidden rounded-[32px] border border-border/70 bg-background/95 shadow-none">
+        <CardHeader className="space-y-4 border-b border-border/70 bg-muted/20 p-4 md:p-5">
+          <div className="flex flex-col gap-3 xl:flex-row xl:items-stretch">
+            <div className="jobs-glow-inner flex-1 rounded-[26px] border border-border/70 bg-card/80 p-4 md:p-5">
+              <CardTitle className="text-2xl gradient-title md:text-3xl">
+                {activeTab === JOB_TABS.SAVED
+                  ? "Application Tracker"
+                  : results.criteria.query
+                    ? `${results.criteria.query} results`
+                    : "Browse your jobs workspace"}
+              </CardTitle>
+              <CardDescription className="mt-2">
+                {activeTab === JOB_TABS.SAVED
+                  ? "Saved jobs, pipeline stages, and follow-up notes live here. Open any card to manage the full workflow."
+                  : `Showing ${visibleJobs.length} roles across top match and remote views from ${results.providerName}. Use View Job to open the full workspace.`}
+              </CardDescription>
+            </div>
 
-              {results.sourceUrl && activeTab !== JOB_TABS.SAVED ? (
-                <Button variant="outline" asChild className="jobs-glow-button">
+            {results.sourceUrl && activeTab !== JOB_TABS.SAVED ? (
+              <div className="jobs-glow-inner rounded-[24px] border border-border/70 bg-card/80 p-2.5 xl:min-w-[240px]">
+                <Button variant="outline" asChild className="jobs-glow-button h-full w-full rounded-[18px]">
                   <a
                     href={results.sourceUrl}
                     target="_blank"
@@ -772,107 +740,106 @@ export default function JobsHub({
                     <ExternalLink className="h-4 w-4" />
                   </a>
                 </Button>
-              ) : null}
-            </div>
-
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid h-auto w-full grid-cols-2 gap-2 bg-transparent p-0 md:grid-cols-4">
-                {tabs.map((tab) => (
-                  <TabsTrigger
-                    key={tab.value}
-                    value={tab.value}
-                    className="jobs-glow-inner h-auto rounded-xl border border-border/70 px-3 py-2.5 shadow-none data-[state=active]:border-sky-400/30 data-[state=active]:bg-slate-950 data-[state=active]:text-white"
-                  >
-                    <span className="flex items-center gap-2">
-                      {tab.label}
-                      <Badge
-                        variant="secondary"
-                        className="rounded-full px-2 py-0.5 text-xs"
-                      >
-                        {tab.count}
-                      </Badge>
-                    </span>
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-            </Tabs>
-
-          </CardHeader>
-
-          <CardContent className="space-y-4 p-4">
-            {!results.hasSearched && activeTab !== JOB_TABS.SAVED ? (
-              <EmptyTabState
-                title="Start with the role you want"
-                description="Use the sticky bar or the focus search dialog to launch a new role search. Your tracker stays available even before you search."
-                actionLabel="Open Search"
-                onAction={() => setIsSearchOpen(true)}
-              />
+              </div>
             ) : null}
+          </div>
 
-            {activeTab === JOB_TABS.SAVED && visibleJobs.length === 0 ? (
-              <EmptyTabState
-                title="No saved jobs yet"
-                description="Save roles from your search results to build an application pipeline and keep notes in one place."
-                actionLabel="Search Roles"
-                onAction={() => setIsSearchOpen(true)}
-              />
-            ) : null}
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="jobs-glow-inner grid h-auto w-full grid-cols-2 gap-2 rounded-[26px] border border-border/70 bg-card/70 p-2 md:grid-cols-3">
+              {tabs.map((tab) => (
+                <TabsTrigger
+                  key={tab.value}
+                  value={tab.value}
+                  className="relative h-auto rounded-[18px] border border-border/60 bg-background/50 px-4 py-2.5 text-muted-foreground shadow-none transition-all duration-200 before:absolute before:inset-x-6 before:top-0 before:h-px before:rounded-full before:bg-transparent before:content-[''] data-[state=active]:-translate-y-0.5 data-[state=active]:border-white/35 data-[state=active]:bg-[linear-gradient(180deg,rgba(255,255,255,0.14),rgba(148,163,184,0.08)_40%,rgba(15,23,42,0.92))] data-[state=active]:text-white data-[state=active]:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.18),inset_0_1px_0_rgba(255,255,255,0.24),0_14px_26px_-20px_rgba(15,23,42,0.8)] data-[state=active]:before:bg-white/65"
+                >
+                  <span>{tab.label}</span>
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
+        </CardHeader>
 
-            {results.hasSearched &&
-            activeTab !== JOB_TABS.SAVED &&
-            visibleJobs.length === 0 ? (
-              <EmptyTabState
-                title="Nothing matched this tab yet"
-                description="Try broadening the role, clearing the company filter, or switching provider and market."
-                actionLabel="Adjust Search"
-                onAction={() => setIsSearchOpen(true)}
-              />
-            ) : null}
+        <CardContent className="space-y-4 p-4 md:p-5">
+          {!results.hasSearched && activeTab !== JOB_TABS.SAVED ? (
+            <EmptyTabState
+              title="Start with the role you want"
+              description="Use the sticky bar or the focus search dialog to launch a new role search. Your tracker stays available even before you search."
+              actionLabel="Open Search"
+              onAction={() => setIsSearchOpen(true)}
+            />
+          ) : null}
 
-            <div className="space-y-4">
+          {activeTab === JOB_TABS.SAVED && visibleJobs.length === 0 ? (
+            <EmptyTabState
+              title="No saved jobs yet"
+              description="Save roles from your search results to build an application pipeline and keep notes in one place."
+              actionLabel="Search Roles"
+              onAction={() => setIsSearchOpen(true)}
+            />
+          ) : null}
+
+          {results.hasSearched &&
+          activeTab !== JOB_TABS.SAVED &&
+          visibleJobs.length === 0 ? (
+            <EmptyTabState
+              title="Nothing matched this tab yet"
+              description="Try broadening the role or switching provider and market."
+              actionLabel="Adjust Search"
+              onAction={() => setIsSearchOpen(true)}
+            />
+          ) : null}
+
+          {visibleJobs.length > 0 ? (
+            <div className="grid gap-4 md:grid-cols-2">
               {visibleJobs.map((job) => (
                 <ResultCard
                   key={`${activeTab}-${getJobKey(job)}`}
                   job={job}
-                  isSelected={getJobKey(job) === effectiveSelectedJobKey}
-                  onSelect={() => setSelectedJobKey(getJobKey(job))}
+                  onView={() => handleOpenJob(getJobKey(job))}
                 />
               ))}
             </div>
+          ) : null}
+        </CardContent>
+      </Card>
 
-            {isDetailLoading && visibleJobs.length > 0 ? (
-              <div className="jobs-glow-inner rounded-xl border border-dashed p-3">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Loading full role details...
-                </div>
-              </div>
-            ) : null}
-          </CardContent>
-        </Card>
+      <Dialog
+        open={Boolean(activeJobDetail) && isDetailOpen}
+        onOpenChange={setIsDetailOpen}
+      >
+        <DialogContent className="max-h-[92vh] max-w-6xl overflow-y-auto border-0 bg-transparent p-0 shadow-none sm:rounded-[28px] [&>button]:right-5 [&>button]:top-5 [&>button]:z-20 [&>button]:rounded-full [&>button]:border [&>button]:border-border/70 [&>button]:bg-background/95 [&>button]:p-1 [&>button]:shadow-sm">
+          <DialogTitle className="sr-only">
+            {activeJobDetail?.title || "Job details"}
+          </DialogTitle>
+          <DialogDescription className="sr-only">
+            Review role details, ATS fit, tracker notes, and application actions.
+          </DialogDescription>
 
-        <JobsDetailPanel
-          job={selectedJobDetail}
-          isLoading={isDetailLoading}
-          isSaving={savingJob}
-          isUpdating={updatingJob}
-          isRemoving={removingJob}
-          statusOptions={statusOptions}
-          notesDraft={notesDraft}
-          canLoadDetail={Boolean(selectedJobDetail) && !jobHasDetailedSnapshot(selectedJobDetail)}
-          onLoadDetail={handleLoadDetail}
-          onNotesChange={(nextValue) =>
-            setNotesDrafts((currentDrafts) => ({
-              ...currentDrafts,
-              [effectiveSelectedJobKey]: nextValue,
-            }))
-          }
-          onSaveNotes={handleSaveNotes}
-          onStatusChange={handleStatusChange}
-          onSaveJob={handleSaveJob}
-          onRemoveSavedJob={handleRemoveSavedJob}
-        />
-      </div>
+          <JobsDetailPanel
+            job={activeJobDetail}
+            isLoading={isDetailLoading}
+            isSaving={savingJob}
+            isUpdating={updatingJob}
+            isRemoving={removingJob}
+            statusOptions={statusOptions}
+            notesDraft={notesDraft}
+            canLoadDetail={
+              Boolean(activeJobDetail) && !jobHasDetailedSnapshot(activeJobDetail)
+            }
+            onLoadDetail={handleLoadDetail}
+            onNotesChange={(nextValue) =>
+              setNotesDrafts((currentDrafts) => ({
+                ...currentDrafts,
+                [activeJobKey]: nextValue,
+              }))
+            }
+            onSaveNotes={handleSaveNotes}
+            onStatusChange={handleStatusChange}
+            onSaveJob={handleSaveJob}
+            onRemoveSavedJob={handleRemoveSavedJob}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -80,13 +80,13 @@ body {
   }
   .jobs-glow-panel {
     background-image:
-      radial-gradient(circle at top, rgba(37, 99, 235, 0.14), transparent 58%),
-      linear-gradient(180deg, rgba(56, 189, 248, 0.04), transparent 34%);
+      linear-gradient(180deg, rgba(248, 250, 252, 0.18) 0%, rgba(226, 232, 240, 0.08) 18%, transparent 100%),
+      linear-gradient(135deg, rgba(148, 163, 184, 0.14), rgba(255, 255, 255, 0.02) 48%, rgba(203, 213, 225, 0.1) 100%);
     box-shadow:
-      inset 0 0 0 1px rgba(125, 211, 252, 0.08),
-      inset 0 1px 0 rgba(255, 255, 255, 0.04),
-      inset 0 18px 34px -28px rgba(14, 165, 233, 0.42),
-      inset 0 -18px 28px -30px rgba(15, 23, 42, 0.45);
+      inset 0 0 0 1px rgba(226, 232, 240, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.16),
+      inset 0 -1px 0 rgba(148, 163, 184, 0.08),
+      0 24px 42px -36px rgba(15, 23, 42, 0.5);
     transition:
       border-color 0.2s ease,
       box-shadow 0.2s ease,
@@ -95,19 +95,20 @@ body {
   }
   .jobs-glow-panel:hover {
     box-shadow:
-      inset 0 0 0 1px rgba(125, 211, 252, 0.14),
-      inset 0 1px 0 rgba(255, 255, 255, 0.06),
-      inset 0 20px 38px -28px rgba(14, 165, 233, 0.52),
-      inset 0 -20px 30px -30px rgba(15, 23, 42, 0.5);
+      inset 0 0 0 1px rgba(226, 232, 240, 0.12),
+      inset 0 1px 0 rgba(255, 255, 255, 0.22),
+      inset 0 -1px 0 rgba(148, 163, 184, 0.12),
+      0 28px 48px -36px rgba(15, 23, 42, 0.54);
   }
   .jobs-glow-inner {
     background-image:
-      radial-gradient(circle at top, rgba(37, 99, 235, 0.1), transparent 62%),
-      linear-gradient(180deg, rgba(56, 189, 248, 0.03), transparent 36%);
+      linear-gradient(180deg, rgba(248, 250, 252, 0.14) 0%, rgba(226, 232, 240, 0.05) 26%, transparent 100%),
+      linear-gradient(135deg, rgba(148, 163, 184, 0.1), rgba(255, 255, 255, 0.02) 46%, rgba(203, 213, 225, 0.08) 100%);
     box-shadow:
-      inset 0 0 0 1px rgba(125, 211, 252, 0.06),
-      inset 0 1px 0 rgba(255, 255, 255, 0.03),
-      inset 0 14px 28px -24px rgba(14, 165, 233, 0.3);
+      inset 0 0 0 1px rgba(226, 232, 240, 0.06),
+      inset 0 1px 0 rgba(255, 255, 255, 0.12),
+      inset 0 -1px 0 rgba(148, 163, 184, 0.06),
+      0 18px 32px -36px rgba(15, 23, 42, 0.42);
     transition:
       border-color 0.2s ease,
       box-shadow 0.2s ease,
@@ -116,18 +117,20 @@ body {
   }
   .jobs-glow-inner:hover {
     box-shadow:
-      inset 0 0 0 1px rgba(125, 211, 252, 0.13),
-      inset 0 1px 0 rgba(255, 255, 255, 0.05),
-      inset 0 18px 32px -24px rgba(14, 165, 233, 0.38);
+      inset 0 0 0 1px rgba(226, 232, 240, 0.12),
+      inset 0 1px 0 rgba(255, 255, 255, 0.18),
+      inset 0 -1px 0 rgba(148, 163, 184, 0.09),
+      0 20px 34px -34px rgba(15, 23, 42, 0.46);
   }
   .jobs-glow-button {
     background-image:
-      radial-gradient(circle at top, rgba(37, 99, 235, 0.12), transparent 60%),
-      linear-gradient(180deg, rgba(56, 189, 248, 0.035), transparent 36%);
+      linear-gradient(180deg, rgba(248, 250, 252, 0.14) 0%, rgba(203, 213, 225, 0.06) 30%, transparent 100%),
+      linear-gradient(135deg, rgba(148, 163, 184, 0.12), rgba(255, 255, 255, 0.02) 50%, rgba(203, 213, 225, 0.08) 100%);
     box-shadow:
-      inset 0 0 0 1px rgba(125, 211, 252, 0.08),
-      inset 0 1px 0 rgba(255, 255, 255, 0.04),
-      inset 0 16px 28px -24px rgba(14, 165, 233, 0.35);
+      inset 0 0 0 1px rgba(226, 232, 240, 0.1),
+      inset 0 1px 0 rgba(255, 255, 255, 0.18),
+      inset 0 -1px 0 rgba(148, 163, 184, 0.08),
+      0 16px 28px -28px rgba(15, 23, 42, 0.42);
     transition:
       border-color 0.2s ease,
       box-shadow 0.2s ease,
@@ -136,56 +139,57 @@ body {
   }
   .jobs-glow-button:hover {
     box-shadow:
-      inset 0 0 0 1px rgba(125, 211, 252, 0.16),
-      inset 0 1px 0 rgba(255, 255, 255, 0.06),
-      inset 0 18px 32px -24px rgba(14, 165, 233, 0.42);
+      inset 0 0 0 1px rgba(226, 232, 240, 0.15),
+      inset 0 1px 0 rgba(255, 255, 255, 0.24),
+      inset 0 -1px 0 rgba(148, 163, 184, 0.1),
+      0 18px 30px -26px rgba(15, 23, 42, 0.46);
+    transform: translateY(-1px);
   }
   .jobs-glow-button-primary {
     background-image:
-      radial-gradient(circle at top, rgba(255, 255, 255, 0.55), transparent 58%),
-      linear-gradient(180deg, rgba(125, 211, 252, 0.16), transparent 42%);
+      linear-gradient(180deg, rgba(255, 255, 255, 0.34) 0%, rgba(226, 232, 240, 0.22) 44%, rgba(148, 163, 184, 0.12) 100%),
+      linear-gradient(135deg, rgba(248, 250, 252, 0.38), rgba(203, 213, 225, 0.14) 52%, rgba(148, 163, 184, 0.18) 100%);
     box-shadow:
       inset 0 0 0 1px rgba(255, 255, 255, 0.26),
-      inset 0 1px 0 rgba(255, 255, 255, 0.7),
-      inset 0 16px 26px -18px rgba(255, 255, 255, 0.55),
-      inset 0 -12px 20px -16px rgba(125, 211, 252, 0.18);
+      inset 0 1px 0 rgba(255, 255, 255, 0.72),
+      inset 0 -1px 0 rgba(148, 163, 184, 0.12),
+      0 18px 30px -28px rgba(15, 23, 42, 0.36);
   }
   .jobs-glow-button-primary:hover {
     box-shadow:
       inset 0 0 0 1px rgba(255, 255, 255, 0.36),
-      inset 0 1px 0 rgba(255, 255, 255, 0.78),
-      inset 0 18px 28px -18px rgba(255, 255, 255, 0.64),
-      inset 0 -14px 22px -16px rgba(125, 211, 252, 0.22);
+      inset 0 1px 0 rgba(255, 255, 255, 0.82),
+      inset 0 -1px 0 rgba(148, 163, 184, 0.16),
+      0 20px 32px -28px rgba(15, 23, 42, 0.4);
   }
   .jobs-glow-button-danger {
     background-image:
-      radial-gradient(circle at top, rgba(248, 113, 113, 0.3), transparent 58%),
-      linear-gradient(180deg, rgba(127, 29, 29, 0.68), rgba(69, 10, 10, 0.94));
+      linear-gradient(180deg, rgba(185, 28, 28, 0.86), rgba(127, 29, 29, 0.96));
     box-shadow:
-      inset 0 0 0 1px rgba(248, 113, 113, 0.3),
-      inset 0 1px 0 rgba(255, 255, 255, 0.08),
-      inset 0 16px 28px -18px rgba(248, 113, 113, 0.3),
-      inset 0 -14px 22px -18px rgba(69, 10, 10, 0.45);
+      inset 0 0 0 1px rgba(248, 113, 113, 0.28),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1),
+      inset 0 -1px 0 rgba(69, 10, 10, 0.22),
+      0 18px 30px -28px rgba(69, 10, 10, 0.45);
   }
   .jobs-glow-button-danger:hover {
     box-shadow:
-      inset 0 0 0 1px rgba(252, 165, 165, 0.42),
-      inset 0 1px 0 rgba(255, 255, 255, 0.11),
-      inset 0 18px 30px -18px rgba(248, 113, 113, 0.38),
-      inset 0 -16px 24px -18px rgba(69, 10, 10, 0.52);
+      inset 0 0 0 1px rgba(252, 165, 165, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.14),
+      inset 0 -1px 0 rgba(69, 10, 10, 0.28),
+      0 20px 32px -28px rgba(69, 10, 10, 0.5);
   }
   .jobs-glow-active,
   .jobs-glow-button.jobs-glow-active,
   .jobs-glow-button.jobs-glow-active:hover,
   .jobs-glow-inner[data-state="active"] {
     background-image:
-      radial-gradient(circle at top, rgba(37, 99, 235, 0.22), transparent 56%),
-      linear-gradient(180deg, rgba(56, 189, 248, 0.08), transparent 40%);
+      linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0%, rgba(226, 232, 240, 0.08) 24%, transparent 100%),
+      linear-gradient(135deg, rgba(148, 163, 184, 0.18), rgba(255, 255, 255, 0.04) 44%, rgba(203, 213, 225, 0.14) 100%);
     box-shadow:
-      inset 0 0 0 1px rgba(125, 211, 252, 0.22),
-      inset 0 1px 0 rgba(255, 255, 255, 0.08),
-      inset 0 22px 44px -28px rgba(37, 99, 235, 0.78),
-      inset 0 10px 26px -18px rgba(56, 189, 248, 0.55);
+      inset 0 0 0 1px rgba(255, 255, 255, 0.18),
+      inset 0 1px 0 rgba(255, 255, 255, 0.24),
+      inset 0 -1px 0 rgba(148, 163, 184, 0.1),
+      0 22px 36px -32px rgba(15, 23, 42, 0.48);
   }
   .chatbot-inset-panel {
     box-shadow:
