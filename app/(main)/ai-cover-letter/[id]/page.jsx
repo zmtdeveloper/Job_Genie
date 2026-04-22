@@ -29,17 +29,29 @@ export default async function EditCoverLetterPage({ params }) {
 
   if (loadError) {
     return (
-      <div className="container mx-auto py-6">
-        <div className="flex flex-col space-y-2">
-          <Button asChild variant="link" className="gap-2 pl-0">
-            <Link href="/ai-cover-letter">
-              <ArrowLeft className="h-4 w-4" />
-              Back to Cover Letters
-            </Link>
-          </Button>
+      <div className="space-y-6">
+        <div className="brand-page-header px-6 py-7 md:px-8">
+          <div className="relative z-10 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <p className="brand-kicker">Cover letter studio</p>
+              <h1 className="mt-3 text-4xl font-semibold md:text-5xl gradient-title">
+                Cover Letter Preview
+              </h1>
+              <p className="mt-3 max-w-2xl text-sm leading-7 text-muted-foreground md:text-base">
+                This draft could not be loaded right now.
+              </p>
+            </div>
+
+            <Button asChild variant="outline">
+              <Link href="/ai-cover-letter">
+                <ArrowLeft className="h-4 w-4" />
+                Back to Cover Letters
+              </Link>
+            </Button>
+          </div>
         </div>
 
-        <Card className="mt-4">
+        <Card className="jobs-glow-panel border-border/70">
           <CardHeader>
             <CardTitle>Unable to open this cover letter</CardTitle>
             <CardDescription>{loadError}</CardDescription>
@@ -58,18 +70,27 @@ export default async function EditCoverLetterPage({ params }) {
   }
 
   return (
-    <div className="container mx-auto py-6">
-      <div className="flex flex-col space-y-2">
-        <Button asChild variant="link" className="gap-2 pl-0">
-          <Link href="/ai-cover-letter">
-            <ArrowLeft className="h-4 w-4" />
-            Back to Cover Letters
-          </Link>
-        </Button>
+    <div className="space-y-6">
+      <div className="brand-page-header px-6 py-7 md:px-8">
+        <div className="relative z-10 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <p className="brand-kicker">Cover letter preview</p>
+            <h1 className="mt-3 text-4xl font-semibold md:text-5xl gradient-title">
+              {coverLetter.jobTitle} at {coverLetter.companyName}
+            </h1>
+            <p className="mt-3 max-w-2xl text-sm leading-7 text-muted-foreground md:text-base">
+              Review the final letter in a clean reading view before you reuse
+              or refine it for the application.
+            </p>
+          </div>
 
-        <h1 className="text-6xl font-bold gradient-title mb-6">
-          {coverLetter.jobTitle} at {coverLetter.companyName}
-        </h1>
+          <Button asChild variant="outline">
+            <Link href="/ai-cover-letter">
+              <ArrowLeft className="h-4 w-4" />
+              Back to Cover Letters
+            </Link>
+          </Button>
+        </div>
       </div>
 
       <CoverLetterPreview content={coverLetter.content} />

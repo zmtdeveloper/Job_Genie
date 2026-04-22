@@ -83,7 +83,7 @@ export default function JobsSearchDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent className="jobs-glow-panel border-border/70 sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle className="text-2xl gradient-title">
             Find Recommended Jobs
@@ -93,7 +93,7 @@ export default function JobsSearchDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="rounded-lg border bg-muted/40 p-4">
+        <div className="jobs-glow-inner rounded-[22px] border border-border/70 bg-background/45 p-4">
           <p className="text-sm font-medium">
             Your current profile context: {profileSummary.industry || "Career"}
           </p>

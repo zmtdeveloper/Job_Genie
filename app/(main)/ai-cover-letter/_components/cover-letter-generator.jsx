@@ -58,17 +58,18 @@ export default function CoverLetterGenerator({ initialValues }) {
 
   return (
     <div className="space-y-6">
-      <Card>
+      <Card className="jobs-glow-panel border-border/70">
         <CardHeader>
-          <CardTitle>Job Details</CardTitle>
+          <CardTitle className="gradient-title text-3xl md:text-4xl">
+            Job Details
+          </CardTitle>
           <CardDescription>
             Provide information about the position you are applying for
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            {/* Form fields remain the same */}
-            <div className="grid grid-cols-2 gap-4">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+            <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="companyName">Company Name</Label>
                 <Input

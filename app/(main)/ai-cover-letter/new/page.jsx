@@ -12,22 +12,26 @@ export default async function NewCoverLetterPage({ searchParams }) {
   };
 
   return (
-    <div className="container mx-auto py-6">
-      <div className="flex flex-col space-y-2">
-        <Button asChild variant="link" className="gap-2 pl-0">
-          <Link href="/ai-cover-letter">
-            <ArrowLeft className="h-4 w-4" />
-            Back to Cover Letters
-          </Link>
-        </Button>
+    <div className="space-y-6">
+      <div className="brand-page-header px-6 py-7 md:px-8">
+        <div className="relative z-10 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <p className="brand-kicker">Cover letter studio</p>
+            <h1 className="mt-3 text-4xl font-semibold md:text-5xl gradient-title">
+              Create Cover Letter
+            </h1>
+            <p className="mt-3 max-w-2xl text-sm leading-7 text-muted-foreground md:text-base">
+              Generate a tailored cover letter from the role context you already
+              captured elsewhere in the app.
+            </p>
+          </div>
 
-        <div className="pb-6">
-          <h1 className="text-6xl font-bold gradient-title">
-            Create Cover Letter
-          </h1>
-          <p className="text-muted-foreground">
-            Generate a tailored cover letter for your job application
-          </p>
+          <Button asChild variant="outline">
+            <Link href="/ai-cover-letter">
+              <ArrowLeft className="h-4 w-4" />
+              Back to Cover Letters
+            </Link>
+          </Button>
         </div>
       </div>
 

@@ -98,7 +98,7 @@ export default function Quiz({ jobContext }) {
   };
 
   if (generatingQuiz) {
-    return <BarLoader className="mt-4" width={"100%"} color="gray" />;
+    return <BarLoader className="mt-4" width={"100%"} color="#38bdf8" />;
   }
 
   // Show results if quiz is completed
@@ -112,7 +112,7 @@ export default function Quiz({ jobContext }) {
 
   if (!quizData) {
     return (
-      <Card className="mx-2">
+      <Card className="jobs-glow-panel mx-2 border-border/70">
         <CardHeader>
           <CardTitle>Ready to test your knowledge?</CardTitle>
         </CardHeader>
@@ -136,7 +136,7 @@ export default function Quiz({ jobContext }) {
   const question = quizData[currentQuestion];
 
   return (
-    <Card className="mx-2">
+    <Card className="jobs-glow-panel mx-2 border-border/70">
       <CardHeader>
         <CardTitle>
           Question {currentQuestion + 1} of {quizData.length}
@@ -150,7 +150,10 @@ export default function Quiz({ jobContext }) {
           className="space-y-2"
         >
           {question.options.map((option, index) => (
-            <div key={index} className="flex items-center space-x-2">
+            <div
+              key={index}
+              className="jobs-glow-inner flex items-center space-x-3 rounded-[18px] border border-border/70 p-3"
+            >
               <RadioGroupItem value={option} id={`option-${index}`} />
               <Label htmlFor={`option-${index}`}>{option}</Label>
             </div>
@@ -158,9 +161,9 @@ export default function Quiz({ jobContext }) {
         </RadioGroup>
 
         {showExplanation && (
-          <div className="mt-4 p-4 bg-muted rounded-lg">
+          <div className="jobs-glow-inner mt-4 rounded-[20px] border border-border/70 p-4">
             <p className="font-medium">Explanation:</p>
-            <p className="text-muted-foreground">{question.explanation}</p>
+            <p className="leading-7 text-muted-foreground">{question.explanation}</p>
           </div>
         )}
       </CardContent>
@@ -179,10 +182,9 @@ export default function Quiz({ jobContext }) {
           disabled={!answers[currentQuestion] || savingResult}
           className="ml-auto"
         >
-          {savingResult && (
-            <BarLoader className="mt-4" width={"100%"} color="gray" />
-          )}
-          {currentQuestion < quizData.length - 1
+          {savingResult
+            ? "Saving..."
+            : currentQuestion < quizData.length - 1
             ? "Next Question"
             : "Finish Quiz"}
         </Button>

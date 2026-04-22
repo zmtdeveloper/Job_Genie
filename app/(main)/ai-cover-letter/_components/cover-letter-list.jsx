@@ -40,7 +40,7 @@ export default function CoverLetterList({ coverLetters }) {
 
   if (!coverLetters?.length) {
     return (
-      <Card>
+      <Card className="jobs-glow-panel border-border/70">
         <CardHeader>
           <CardTitle>No Cover Letters Yet</CardTitle>
           <CardDescription>
@@ -54,14 +54,17 @@ export default function CoverLetterList({ coverLetters }) {
   return (
     <div className="space-y-4">
       {coverLetters.map((letter) => (
-        <Card key={letter.id} className="group relative ">
+        <Card
+          key={letter.id}
+          className="jobs-glow-panel group relative border-border/70"
+        >
           <CardHeader>
             <div className="flex items-start justify-between">
               <div>
                 <CardTitle className="text-xl gradient-title">
                   {letter.jobTitle} at {letter.companyName}
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="mt-2">
                   Created {format(new Date(letter.createdAt), "PPP")}
                 </CardDescription>
               </div>
@@ -70,12 +73,17 @@ export default function CoverLetterList({ coverLetters }) {
                   <Button
                     variant="outline"
                     size="icon"
+                    className="jobs-glow-button rounded-full"
                     onClick={() => router.push(`/ai-cover-letter/${letter.id}`)}
                   >
                     <Eye className="h-4 w-4" />
                   </Button>
                   <AlertDialogTrigger asChild>
-                    <Button variant="outline" size="icon">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="jobs-glow-button rounded-full"
+                    >
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </AlertDialogTrigger>
@@ -103,7 +111,7 @@ export default function CoverLetterList({ coverLetters }) {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-muted-foreground text-sm line-clamp-3">
+            <div className="line-clamp-3 text-sm leading-7 text-muted-foreground">
               {letter.jobDescription}
             </div>
           </CardContent>

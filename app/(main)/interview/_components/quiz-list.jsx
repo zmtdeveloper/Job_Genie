@@ -25,7 +25,7 @@ export default function QuizList({ assessments }) {
 
   return (
     <>
-      <Card>
+      <Card className="jobs-glow-panel border-border/70">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
@@ -46,7 +46,7 @@ export default function QuizList({ assessments }) {
             {assessments?.map((assessment, i) => (
               <Card
                 key={assessment.id}
-                className="cursor-pointer hover:bg-muted/50 transition-colors"
+                className="jobs-glow-inner cursor-pointer border-border/70 transition-all hover:-translate-y-0.5 hover:border-white/15"
                 onClick={() => setSelectedQuiz(assessment)}
               >
                 <CardHeader>

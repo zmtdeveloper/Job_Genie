@@ -81,8 +81,39 @@ const OnboardingForm = ({ industries }) => {
   }, [router, updateResult, updateLoading]);
 
   return (
-    <div className="flex items-center justify-center bg-background">
-      <Card className="w-full max-w-lg mt-10 mx-2">
+    <div className="flex min-h-[calc(100vh-10rem)] items-center justify-center">
+      <div className="grid w-full max-w-5xl gap-6 lg:grid-cols-[0.92fr_1.08fr]">
+        <div className="brand-page-header px-6 py-8 md:px-8">
+          <div className="relative z-10 space-y-5">
+            <p className="brand-kicker">Profile setup</p>
+            <div>
+              <h1 className="text-4xl font-semibold leading-tight gradient-title">
+                Personalize your career workspace.
+              </h1>
+              <p className="mt-4 text-base leading-8 text-muted-foreground">
+                A short setup lets JOB GENEI tune role matching, resume advice,
+                interview practice, and chat guidance around your actual goals.
+              </p>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {[
+                "Better role matching",
+                "Sharper ATS feedback",
+                "More relevant mock interviews",
+                "Career chat with stronger context",
+              ].map((item) => (
+                <div
+                  key={item}
+                  className="jobs-glow-inner rounded-[22px] border border-border/70 px-4 py-3 text-sm text-white/80"
+                >
+                  {item}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <Card className="jobs-glow-panel w-full max-w-none border-border/70 mx-2 lg:mx-0">
         <CardHeader>
           <CardTitle className="gradient-title text-4xl">
             Complete Your Profile
@@ -208,7 +239,8 @@ const OnboardingForm = ({ industries }) => {
             </Button>
           </form>
         </CardContent>
-      </Card>
+        </Card>
+      </div>
     </div>
   );
 };

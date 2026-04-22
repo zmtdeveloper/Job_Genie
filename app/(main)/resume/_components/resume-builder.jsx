@@ -156,9 +156,8 @@ export default function ResumeBuilder({ initialContent }) {
   const [syncedPreviewContent, setSyncedPreviewContent] = useState(
     initialContent || ""
   );
-  const [isFormHydratedFromMarkdown, setIsFormHydratedFromMarkdown] = useState(
-    () => parsedInitialResume.canHydrate || !initialContent
-  );
+  const isFormHydratedFromMarkdown =
+    parsedInitialResume.canHydrate || !initialContent;
   const { user } = useUser();
   const [resumeMode, setResumeMode] = useState("preview");
 
@@ -277,42 +276,50 @@ export default function ResumeBuilder({ initialContent }) {
   };
 
   return (
-    <div data-color-mode="light" className="space-y-4">
-      <div className="flex flex-col items-center justify-between gap-2 md:flex-row">
-        <h1 className="font-bold gradient-title text-5xl md:text-6xl">
-          Resume Builder
-        </h1>
-        <div className="space-x-2">
-          <Button
-            variant="destructive"
-            onClick={handleSubmit(onSubmit)}
-            disabled={isSaving}
-          >
-            {isSaving ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Saving...
-              </>
-            ) : (
-              <>
-                <Save className="h-4 w-4" />
-                Save
-              </>
-            )}
-          </Button>
-          <Button onClick={generatePDF} disabled={isGenerating}>
-            {isGenerating ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Generating PDF...
-              </>
-            ) : (
-              <>
-                <Download className="h-4 w-4" />
-                Download PDF
-              </>
-            )}
-          </Button>
+    <div data-color-mode="light" className="space-y-6">
+      <div className="brand-page-header px-6 py-7 md:px-8">
+        <div className="relative z-10 flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
+          <div className="space-y-3">
+            <p className="brand-kicker">Resume workspace</p>
+            <div>
+              <h1 className="text-4xl font-semibold md:text-5xl lg:text-6xl gradient-title">
+                Resume Builder
+              </h1>
+              <p className="mt-3 max-w-2xl text-sm leading-7 text-muted-foreground md:text-base">
+                Move between structured editing and markdown preview, then save
+                or export from the same fast workspace.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-3">
+            <Button onClick={generatePDF} disabled={isGenerating} variant="outline">
+              {isGenerating ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Generating PDF...
+                </>
+              ) : (
+                <>
+                  <Download className="h-4 w-4" />
+                  Download PDF
+                </>
+              )}
+            </Button>
+            <Button onClick={handleSubmit(onSubmit)} disabled={isSaving}>
+              {isSaving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="h-4 w-4" />
+                  Save Resume
+                </>
+              )}
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -327,14 +334,14 @@ export default function ResumeBuilder({ initialContent }) {
           setActiveTab(nextTab);
         }}
       >
-        <TabsList>
+        <TabsList className="jobs-glow-inner w-full justify-start p-2 sm:w-auto">
           <TabsTrigger value="edit">Form</TabsTrigger>
           <TabsTrigger value="preview">Markdown</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="edit">
+        <TabsContent value="edit" className="space-y-4">
           {!canUseFormAsSource ? (
-            <div className="mb-4 flex items-center gap-2 rounded border-2 border-yellow-600 p-3 text-yellow-600">
+            <div className="jobs-glow-inner flex items-center gap-2 rounded-[22px] border border-yellow-500/30 bg-yellow-500/10 p-4 text-yellow-100">
               <AlertTriangle className="h-5 w-5" />
               <span className="text-sm">
                 Your existing markdown resume could not be safely mapped into the
@@ -345,7 +352,7 @@ export default function ResumeBuilder({ initialContent }) {
           ) : null}
 
           {hasUnsyncedMarkdownEdits ? (
-            <div className="mb-4 flex items-center gap-2 rounded border-2 border-yellow-600 p-3 text-yellow-600">
+            <div className="jobs-glow-inner flex items-center gap-2 rounded-[22px] border border-yellow-500/30 bg-yellow-500/10 p-4 text-yellow-100">
               <AlertTriangle className="h-5 w-5" />
               <span className="text-sm">
                 Markdown edits are ahead of the form right now. Save from the
@@ -355,10 +362,10 @@ export default function ResumeBuilder({ initialContent }) {
             </div>
           ) : null}
 
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
-            <div className="space-y-4">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+            <div className="jobs-glow-panel space-y-4 rounded-[28px] border border-border/70 p-5 md:p-6">
               <h3 className="text-lg font-medium">Contact Information</h3>
-              <div className="grid grid-cols-1 gap-4 rounded-lg border bg-muted/50 p-4 md:grid-cols-2">
+              <div className="jobs-glow-inner grid grid-cols-1 gap-4 rounded-[24px] border border-border/70 bg-background/40 p-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Email</label>
                   <Input
@@ -367,7 +374,7 @@ export default function ResumeBuilder({ initialContent }) {
                     placeholder="your@email.com"
                   />
                   {errors.contactInfo?.email && (
-                    <p className="text-sm text-red-500">
+                    <p className="text-sm text-red-400">
                       {errors.contactInfo.email.message}
                     </p>
                   )}
@@ -380,7 +387,7 @@ export default function ResumeBuilder({ initialContent }) {
                     placeholder="+1 234 567 8900"
                   />
                   {errors.contactInfo?.mobile && (
-                    <p className="text-sm text-red-500">
+                    <p className="text-sm text-red-400">
                       {errors.contactInfo.mobile.message}
                     </p>
                   )}
@@ -393,7 +400,7 @@ export default function ResumeBuilder({ initialContent }) {
                     placeholder="https://linkedin.com/in/your-profile"
                   />
                   {errors.contactInfo?.linkedin && (
-                    <p className="text-sm text-red-500">
+                    <p className="text-sm text-red-400">
                       {errors.contactInfo.linkedin.message}
                     </p>
                   )}
@@ -406,7 +413,7 @@ export default function ResumeBuilder({ initialContent }) {
                     placeholder="https://twitter.com/your-handle"
                   />
                   {errors.contactInfo?.twitter && (
-                    <p className="text-sm text-red-500">
+                    <p className="text-sm text-red-400">
                       {errors.contactInfo.twitter.message}
                     </p>
                   )}
@@ -414,7 +421,7 @@ export default function ResumeBuilder({ initialContent }) {
               </div>
             </div>
 
-            <div className="space-y-4">
+            <div className="jobs-glow-panel space-y-4 rounded-[28px] border border-border/70 p-5 md:p-6">
               <h3 className="text-lg font-medium">Professional Summary</h3>
               <Controller
                 name="summary"
@@ -428,11 +435,11 @@ export default function ResumeBuilder({ initialContent }) {
                 )}
               />
               {errors.summary && (
-                <p className="text-sm text-red-500">{errors.summary.message}</p>
+                <p className="text-sm text-red-400">{errors.summary.message}</p>
               )}
             </div>
 
-            <div className="space-y-4">
+            <div className="jobs-glow-panel space-y-4 rounded-[28px] border border-border/70 p-5 md:p-6">
               <h3 className="text-lg font-medium">Skills</h3>
               <Controller
                 name="skills"
@@ -446,11 +453,11 @@ export default function ResumeBuilder({ initialContent }) {
                 )}
               />
               {errors.skills && (
-                <p className="text-sm text-red-500">{errors.skills.message}</p>
+                <p className="text-sm text-red-400">{errors.skills.message}</p>
               )}
             </div>
 
-            <div className="space-y-4">
+            <div className="jobs-glow-panel space-y-4 rounded-[28px] border border-border/70 p-5 md:p-6">
               <h3 className="text-lg font-medium">Work Experience</h3>
               <Controller
                 name="experience"
@@ -464,13 +471,13 @@ export default function ResumeBuilder({ initialContent }) {
                 )}
               />
               {errors.experience && (
-                <p className="text-sm text-red-500">
+                <p className="text-sm text-red-400">
                   {errors.experience.message}
                 </p>
               )}
             </div>
 
-            <div className="space-y-4">
+            <div className="jobs-glow-panel space-y-4 rounded-[28px] border border-border/70 p-5 md:p-6">
               <h3 className="text-lg font-medium">Education</h3>
               <Controller
                 name="education"
@@ -484,13 +491,13 @@ export default function ResumeBuilder({ initialContent }) {
                 )}
               />
               {errors.education && (
-                <p className="text-sm text-red-500">
+                <p className="text-sm text-red-400">
                   {errors.education.message}
                 </p>
               )}
             </div>
 
-            <div className="space-y-4">
+            <div className="jobs-glow-panel space-y-4 rounded-[28px] border border-border/70 p-5 md:p-6">
               <h3 className="text-lg font-medium">Projects</h3>
               <Controller
                 name="projects"
@@ -504,7 +511,7 @@ export default function ResumeBuilder({ initialContent }) {
                 )}
               />
               {errors.projects && (
-                <p className="text-sm text-red-500">
+                <p className="text-sm text-red-400">
                   {errors.projects.message}
                 </p>
               )}
@@ -512,7 +519,7 @@ export default function ResumeBuilder({ initialContent }) {
           </form>
         </TabsContent>
 
-        <TabsContent value="preview">
+        <TabsContent value="preview" className="space-y-4">
           {activeTab === "preview" && (
             <Button
               variant="link"
@@ -537,14 +544,14 @@ export default function ResumeBuilder({ initialContent }) {
           )}
 
           {activeTab === "preview" && resumeMode !== "preview" && (
-            <div className="mb-2 flex items-center gap-2 rounded border-2 border-yellow-600 p-3 text-yellow-600">
+            <div className="jobs-glow-inner flex items-center gap-2 rounded-[22px] border border-yellow-500/30 bg-yellow-500/10 p-4 text-yellow-100">
               <AlertTriangle className="h-5 w-5" />
               <span className="text-sm">
                 You will lose edited markdown if you update the form data.
               </span>
             </div>
           )}
-          <div className="rounded-lg border">
+          <div className="overflow-hidden rounded-[28px] border border-border/70">
             <MDEditor
               value={previewContent}
               onChange={setPreviewContent}

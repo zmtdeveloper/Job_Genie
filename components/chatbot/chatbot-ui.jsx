@@ -244,7 +244,7 @@ function normalizeMessageText(content) {
 
 function stripListMarker(line) {
   return line
-    .replace(/^[-*•]\s+/, "")
+    .replace(/^[-*\u2022]\s+/, "")
     .replace(/^\d+[.)]\s+/, "")
     .trim();
 }
@@ -266,7 +266,7 @@ function parseMessageBlocks(content) {
         .map((line) => line.trim())
         .filter(Boolean);
 
-      if (lines.length > 0 && lines.every((line) => /^[-*•]\s+/.test(line))) {
+      if (lines.length > 0 && lines.every((line) => /^[-*\u2022]\s+/.test(line))) {
         return {
           type: "unordered-list",
           items: lines.map(stripListMarker),
@@ -933,7 +933,7 @@ export default function ChatbotUI({
                           ),
                         ]
                           .filter(Boolean)
-                          .join(" · ");
+                          .join(" - ");
 
                         return (
                           <div
@@ -1212,7 +1212,7 @@ export default function ChatbotUI({
                     <BarChart3 className="h-5 w-5" />
                   </div>
                   <div>
-                    <p className="text-base font-semibold">Saved JOBs</p>
+                    <p className="text-base font-semibold">Saved Jobs</p>
                   </div>
                 </div>
 

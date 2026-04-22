@@ -1,4 +1,4 @@
-import { Inter } from "next/font/google";
+import { Manrope, Space_Grotesk } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import { dark } from "@clerk/themes";
 import { Toaster } from "sonner";
@@ -6,20 +6,34 @@ import Header from "@/components/header";
 import { ThemeProvider } from "@/components/theme-provider";
 import "./globals.css";
 
-const inter = Inter({ subsets: ["latin"] });
+const manrope = Manrope({
+  subsets: ["latin"],
+  variable: "--font-manrope",
+  display: "swap",
+});
+
+const spaceGrotesk = Space_Grotesk({
+  subsets: ["latin"],
+  variable: "--font-space-grotesk",
+  display: "swap",
+});
 
 export const metadata = {
   title: "JOB GENEI",
-  description: "",
+  description: "AI-powered job search, career chat, resume building, and interview prep in one workspace.",
 };
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html
+      lang="en"
+      suppressHydrationWarning
+      data-scroll-behavior="smooth"
+    >
       <head>
         <link rel="icon" href="/JobGenie.png" type="image/png" />
       </head>
-      <body className={inter.className}>
+      <body className={`${manrope.variable} ${spaceGrotesk.variable}`}>
         <ClerkProvider
           afterSignOutUrl="/"
           appearance={{

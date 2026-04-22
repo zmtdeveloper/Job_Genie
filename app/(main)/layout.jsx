@@ -23,21 +23,26 @@ const MainLayout = async ({ children }) => {
 
   if (accountLoadError) {
     return (
-      <div className="container mx-auto pb-8 pt-24">
-        <Card className="mx-auto max-w-2xl">
-          <CardHeader>
-            <CardTitle>Unable to load your account</CardTitle>
-            <CardDescription>{accountLoadError}</CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-wrap gap-3">
-            <Button asChild>
-              <Link href="/">Back Home</Link>
-            </Button>
-            <Button asChild variant="outline">
-              <Link href="/dashboard">Try Again</Link>
-            </Button>
-          </CardContent>
-        </Card>
+      <div className="pb-10 pt-28">
+        <div className="container mx-auto px-4 md:px-6">
+          <Card className="jobs-glow-panel mx-auto max-w-2xl border-border/70">
+            <CardHeader>
+              <p className="brand-kicker">Account status</p>
+              <CardTitle className="text-2xl gradient-title">
+                Unable to load your account
+              </CardTitle>
+              <CardDescription>{accountLoadError}</CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-wrap gap-3">
+              <Button asChild>
+                <Link href="/">Back Home</Link>
+              </Button>
+              <Button asChild variant="outline">
+                <Link href="/dashboard">Try Again</Link>
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }
@@ -46,7 +51,11 @@ const MainLayout = async ({ children }) => {
     redirect("/?auth=required");
   }
 
-  return <div className="container mx-auto pb-8 pt-24">{children}</div>;
+  return (
+    <div className="pb-10 pt-28">
+      <div className="container mx-auto px-4 md:px-6">{children}</div>
+    </div>
+  );
 };
 
 export default MainLayout;

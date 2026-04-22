@@ -26,10 +26,12 @@ export default function StatsCards({ assessments }) {
 
   return (
     <div className="grid gap-4 md:grid-cols-3">
-      <Card>
+      <Card className="jobs-glow-panel border-border/70">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Average Score</CardTitle>
-          <Trophy className="h-4 w-4 text-muted-foreground" />
+          <div className="jobs-glow-inner rounded-[18px] border border-border/70 p-2">
+            <Trophy className="h-4 w-4 text-yellow-300" />
+          </div>
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">{getAverageScore()}%</div>
@@ -39,12 +41,14 @@ export default function StatsCards({ assessments }) {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="jobs-glow-panel border-border/70">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">
             Questions Practiced
           </CardTitle>
-          <Brain className="h-4 w-4 text-muted-foreground" />
+          <div className="jobs-glow-inner rounded-[18px] border border-border/70 p-2">
+            <Brain className="h-4 w-4 text-sky-300" />
+          </div>
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">{getTotalQuestions()}</div>
@@ -52,10 +56,12 @@ export default function StatsCards({ assessments }) {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="jobs-glow-panel border-border/70">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Latest Score</CardTitle>
-          <Target className="h-4 w-4 text-muted-foreground" />
+          <div className="jobs-glow-inner rounded-[18px] border border-border/70 p-2">
+            <Target className="h-4 w-4 text-sky-300" />
+          </div>
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">

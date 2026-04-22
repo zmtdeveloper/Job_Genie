@@ -74,18 +74,20 @@ const DashboardView = ({ insights }) => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-wrap items-center gap-3">
         <Badge variant="outline">Last updated: {lastUpdatedDate}</Badge>
+        <Badge variant="secondary">Next refresh {nextUpdateDistance}</Badge>
       </div>
 
-      {/* Market Overview Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <Card className="jobs-glow-panel border-border/70">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
               Market Outlook
             </CardTitle>
-            <OutlookIcon className={`h-4 w-4 ${outlookColor}`} />
+            <div className="jobs-glow-inner rounded-[18px] border border-border/70 p-2">
+              <OutlookIcon className={`h-4 w-4 ${outlookColor}`} />
+            </div>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{insights.marketOutlook}</div>
@@ -95,40 +97,46 @@ const DashboardView = ({ insights }) => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="jobs-glow-panel border-border/70">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
               Industry Growth
             </CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            <div className="jobs-glow-inner rounded-[18px] border border-border/70 p-2">
+              <TrendingUp className="h-4 w-4 text-sky-300" />
+            </div>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
               {insights.growthRate.toFixed(1)}%
             </div>
-            <Progress value={insights.growthRate} className="mt-2" />
+            <Progress value={insights.growthRate} className="mt-3" />
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="jobs-glow-panel border-border/70">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Demand Level</CardTitle>
-            <BriefcaseIcon className="h-4 w-4 text-muted-foreground" />
+            <div className="jobs-glow-inner rounded-[18px] border border-border/70 p-2">
+              <BriefcaseIcon className="h-4 w-4 text-sky-300" />
+            </div>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{insights.demandLevel}</div>
             <div
-              className={`h-2 w-full rounded-full mt-2 ${getDemandLevelColor(
+              className={`mt-3 h-2.5 w-full rounded-full ${getDemandLevelColor(
                 insights.demandLevel
               )}`}
             />
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="jobs-glow-panel border-border/70">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Top Skills</CardTitle>
-            <Brain className="h-4 w-4 text-muted-foreground" />
+            <div className="jobs-glow-inner rounded-[18px] border border-border/70 p-2">
+              <Brain className="h-4 w-4 text-sky-300" />
+            </div>
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-1">
@@ -142,8 +150,7 @@ const DashboardView = ({ insights }) => {
         </Card>
       </div>
 
-      {/* Salary Ranges Chart */}
-      <Card className="col-span-4">
+      <Card className="jobs-glow-panel col-span-4 border-border/70">
         <CardHeader>
           <CardTitle>Salary Ranges by Role</CardTitle>
           <CardDescription>
@@ -154,14 +161,27 @@ const DashboardView = ({ insights }) => {
           <div className="h-[400px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={salaryData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke="rgba(148, 163, 184, 0.16)"
+                  vertical={false}
+                />
+                <XAxis
+                  dataKey="name"
+                  stroke="rgba(148, 163, 184, 0.72)"
+                  tickLine={false}
+                  axisLine={false}
+                />
+                <YAxis
+                  stroke="rgba(148, 163, 184, 0.72)"
+                  tickLine={false}
+                  axisLine={false}
+                />
                 <Tooltip
                   content={({ active, payload, label }) => {
                     if (active && payload && payload.length) {
                       return (
-                        <div className="bg-background border rounded-lg p-2 shadow-md">
+                        <div className="jobs-glow-panel rounded-[20px] border border-border/70 p-3 shadow-none">
                           <p className="font-medium">{label}</p>
                           {payload.map((item) => (
                             <p key={item.name} className="text-sm">
@@ -174,18 +194,32 @@ const DashboardView = ({ insights }) => {
                     return null;
                   }}
                 />
-                <Bar dataKey="min" fill="#94a3b8" name="Min Salary (K)" />
-                <Bar dataKey="median" fill="#64748b" name="Median Salary (K)" />
-                <Bar dataKey="max" fill="#475569" name="Max Salary (K)" />
+                <Bar
+                  dataKey="min"
+                  fill="rgba(103, 232, 249, 0.48)"
+                  name="Min Salary (K)"
+                  radius={[10, 10, 0, 0]}
+                />
+                <Bar
+                  dataKey="median"
+                  fill="rgba(56, 189, 248, 0.72)"
+                  name="Median Salary (K)"
+                  radius={[10, 10, 0, 0]}
+                />
+                <Bar
+                  dataKey="max"
+                  fill="rgba(37, 99, 235, 0.88)"
+                  name="Max Salary (K)"
+                  radius={[10, 10, 0, 0]}
+                />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </CardContent>
       </Card>
 
-      {/* Industry Trends */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card>
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card className="jobs-glow-panel border-border/70">
           <CardHeader>
             <CardTitle>Key Industry Trends</CardTitle>
             <CardDescription>
@@ -196,7 +230,7 @@ const DashboardView = ({ insights }) => {
             <ul className="space-y-4">
               {insights.keyTrends.map((trend, index) => (
                 <li key={index} className="flex items-start space-x-2">
-                  <div className="h-2 w-2 mt-2 rounded-full bg-primary" />
+                  <div className="mt-2 h-2.5 w-2.5 rounded-full bg-sky-400" />
                   <span>{trend}</span>
                 </li>
               ))}
@@ -204,7 +238,7 @@ const DashboardView = ({ insights }) => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="jobs-glow-panel border-border/70">
           <CardHeader>
             <CardTitle>Recommended Skills</CardTitle>
             <CardDescription>Skills to consider developing</CardDescription>

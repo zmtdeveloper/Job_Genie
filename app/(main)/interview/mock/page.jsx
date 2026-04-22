@@ -18,22 +18,27 @@ export default async function MockInterviewPage({ searchParams }) {
   const hasJobContext = Boolean(jobContext.jobTitle || jobContext.companyName);
 
   return (
-    <div className="container mx-auto space-y-4 py-6">
-      <div className="flex flex-col space-y-2 mx-2">
-        <Button asChild variant="link" className="gap-2 pl-0">
-          <Link href="/interview">
-            <ArrowLeft className="h-4 w-4" />
-            Back to Interview Preparation
-          </Link>
-        </Button>
+    <div className="space-y-6">
+      <div className="brand-page-header px-6 py-7 md:px-8">
+        <div className="relative z-10 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <p className="brand-kicker">Live mock session</p>
+            <h1 className="mt-3 text-4xl font-semibold md:text-5xl gradient-title">
+              Mock Interview
+            </h1>
+            <p className="mt-3 max-w-2xl text-sm leading-7 text-muted-foreground md:text-base">
+              {hasJobContext
+                ? `Practice for ${jobContext.jobTitle || "this role"}${jobContext.companyName ? ` at ${jobContext.companyName}` : ""}`
+                : "Test your knowledge with industry-specific questions"}
+            </p>
+          </div>
 
-        <div>
-          <h1 className="text-6xl font-bold gradient-title">Mock Interview</h1>
-          <p className="text-muted-foreground">
-            {hasJobContext
-              ? `Practice for ${jobContext.jobTitle || "this role"}${jobContext.companyName ? ` at ${jobContext.companyName}` : ""}`
-              : "Test your knowledge with industry-specific questions"}
-          </p>
+          <Button asChild variant="outline">
+            <Link href="/interview">
+              <ArrowLeft className="h-4 w-4" />
+              Back to Interview Preparation
+            </Link>
+          </Button>
         </div>
       </div>
 

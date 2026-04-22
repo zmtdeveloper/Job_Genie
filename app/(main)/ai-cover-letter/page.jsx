@@ -23,19 +23,31 @@ export default async function CoverLetterPage() {
   }
 
   return (
-    <div>
-      <div className="flex flex-col md:flex-row gap-2 items-center justify-between mb-5">
-        <h1 className="text-6xl font-bold gradient-title">My Cover Letters</h1>
-        <Button asChild>
-          <Link href="/ai-cover-letter/new">
-            <Plus className="h-4 w-4 mr-2" />
-            Create New
-          </Link>
-        </Button>
+    <div className="space-y-6">
+      <div className="brand-page-header px-6 py-7 md:px-8">
+        <div className="relative z-10 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <p className="brand-kicker">Application writing</p>
+            <h1 className="mt-3 text-4xl font-semibold md:text-5xl gradient-title">
+              My Cover Letters
+            </h1>
+            <p className="mt-3 max-w-2xl text-sm leading-7 text-muted-foreground md:text-base">
+              Generate tailored letters, review past drafts, and jump straight
+              into edits when a role changes.
+            </p>
+          </div>
+
+          <Button asChild>
+            <Link href="/ai-cover-letter/new">
+              <Plus className="h-4 w-4 mr-2" />
+              Create New
+            </Link>
+          </Button>
+        </div>
       </div>
 
       {loadError ? (
-        <Card>
+        <Card className="jobs-glow-panel border-border/70">
           <CardHeader>
             <CardTitle>Cover letters are temporarily unavailable</CardTitle>
             <CardDescription>{loadError}</CardDescription>

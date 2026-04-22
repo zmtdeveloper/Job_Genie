@@ -26,7 +26,7 @@ export default function PerformanceChart({ assessments }) {
     })) ?? [];
 
   return (
-    <Card>
+    <Card className="jobs-glow-panel border-border/70">
       <CardHeader>
         <CardTitle className="gradient-title text-3xl md:text-4xl">
           Performance Trend
@@ -37,14 +37,28 @@ export default function PerformanceChart({ assessments }) {
         <div className="h-[300px]">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="date" />
-              <YAxis domain={[0, 100]} />
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke="rgba(148, 163, 184, 0.16)"
+                vertical={false}
+              />
+              <XAxis
+                dataKey="date"
+                stroke="rgba(148, 163, 184, 0.72)"
+                tickLine={false}
+                axisLine={false}
+              />
+              <YAxis
+                domain={[0, 100]}
+                stroke="rgba(148, 163, 184, 0.72)"
+                tickLine={false}
+                axisLine={false}
+              />
               <Tooltip
                 content={({ active, payload }) => {
                   if (active && payload?.length) {
                     return (
-                      <div className="bg-background border rounded-lg p-2 shadow-md">
+                      <div className="jobs-glow-panel rounded-[20px] border border-border/70 p-3 shadow-none">
                         <p className="text-sm font-medium">
                           Score: {payload[0].value}%
                         </p>
@@ -60,8 +74,8 @@ export default function PerformanceChart({ assessments }) {
               <Line
                 type="monotone"
                 dataKey="score"
-                stroke="hsl(var(--primary))"
-                strokeWidth={2}
+                stroke="rgba(56, 189, 248, 1)"
+                strokeWidth={3}
               />
             </LineChart>
           </ResponsiveContainer>

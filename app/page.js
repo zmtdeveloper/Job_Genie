@@ -49,16 +49,16 @@ export default async function LandingPage({ searchParams }) {
       />
 
       {/* Features Section */}
-      <section className="w-full py-12 md:py-24 lg:py-32 bg-background">
+      <section className="w-full py-12 md:py-24 lg:py-32">
         <div className="container mx-auto px-4 md:px-6">
-          <h2 className="text-3xl font-bold tracking-tighter text-center mb-12">
+          <h2 className="mb-12 text-center text-3xl font-semibold tracking-tight gradient-title md:text-5xl">
             Powerful Features for Your Career Growth
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
             {features.map((feature, index) => (
               <Card
                 key={index}
-                className="border-2 hover:border-primary transition-colors duration-300"
+                className="jobs-glow-panel border-border/70 transition-colors duration-300 hover:border-sky-400/30"
               >
                 <CardContent className="pt-6 text-center flex flex-col items-center">
                   <div className="flex flex-col items-center justify-center">
@@ -76,9 +76,9 @@ export default async function LandingPage({ searchParams }) {
       </section>
 
       {/* Stats Section */}
-      <section className="w-full py-12 md:py-24 bg-muted/50">
+      <section className="w-full py-12 md:py-24">
         <div className="container mx-auto px-4 md:px-6">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-4xl mx-auto text-center">
+          <div className="brand-page-header grid max-w-5xl grid-cols-2 gap-8 px-6 py-8 text-center md:grid-cols-4 md:px-8">
             <div className="flex flex-col items-center justify-center space-y-2">
               <h3 className="text-4xl font-bold">50+</h3>
               <p className="text-muted-foreground">Industries Covered</p>
@@ -100,10 +100,12 @@ export default async function LandingPage({ searchParams }) {
       </section>
 
       {/* How It Works Section */}
-      <section className="w-full py-12 md:py-24 bg-background">
+      <section className="w-full py-12 md:py-24">
         <div className="container mx-auto px-4 md:px-6">
           <div className="text-center max-w-3xl mx-auto mb-12">
-            <h2 className="text-3xl font-bold mb-4">How It Works</h2>
+            <h2 className="mb-4 text-3xl font-semibold gradient-title md:text-5xl">
+              How It Works
+            </h2>
             <p className="text-muted-foreground">
               Four simple steps to accelerate your career growth
             </p>
@@ -115,7 +117,7 @@ export default async function LandingPage({ searchParams }) {
                 key={index}
                 className="flex flex-col items-center text-center space-y-4"
               >
-                <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                <div className="jobs-glow-inner flex h-16 w-16 items-center justify-center rounded-full border border-border/70">
                   {item.icon}
                 </div>
                 <h3 className="font-semibold text-xl">{item.title}</h3>
@@ -126,14 +128,14 @@ export default async function LandingPage({ searchParams }) {
         </div>
       </section>
 
-      <section className="w-full py-12 md:py-24 bg-muted/50">
+      <section className="w-full py-12 md:py-24">
         <div className="container mx-auto px-4 md:px-6">
-          <h2 className="text-3xl font-bold text-center mb-12">
+          <h2 className="mb-12 text-center text-3xl font-semibold gradient-title md:text-5xl">
             What Our Users Say
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
             {testimonial.map((testimonial, index) => (
-              <Card key={index} className="bg-background">
+              <Card key={index} className="jobs-glow-panel border-border/70">
                 <CardContent className="pt-6">
                   <div className="flex flex-col space-y-4">
                     <div className="flex items-center space-x-4 mb-4">
@@ -179,7 +181,7 @@ export default async function LandingPage({ searchParams }) {
       <section className="w-full py-12 md:py-24">
         <div className="container mx-auto px-4 md:px-6">
           <div className="text-center max-w-3xl mx-auto mb-12">
-            <h2 className="text-3xl font-bold mb-4">
+            <h2 className="mb-4 text-3xl font-semibold gradient-title md:text-5xl">
               Frequently Asked Questions
             </h2>
             <p className="text-muted-foreground">
@@ -204,7 +206,7 @@ export default async function LandingPage({ searchParams }) {
 
       {/* CTA Section */}
       <section className="w-full">
-        <div className="mx-auto py-24 gradient rounded-lg">
+        <div className="mx-auto rounded-[32px] py-24 gradient">
           <div className="flex flex-col items-center justify-center space-y-4 text-center max-w-3xl mx-auto">
             <h2 className="text-3xl font-bold tracking-tighter text-primary-foreground sm:text-4xl md:text-5xl">
               Ready to Accelerate Your Career?
