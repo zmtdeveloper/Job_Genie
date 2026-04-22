@@ -12,7 +12,6 @@ export default async function CareerChatPage({ searchParams }) {
         initialMode={data.selectedMode}
         draftContext={data.draftContext}
         topSavedJobs={data.topSavedJobs}
-        latestAssessment={data.latestAssessment}
       />
     </div>
   );
