@@ -759,6 +759,7 @@ export async function getCareerChatPageData(searchParams) {
       resumeScore: profile.resumeScore,
     },
     trackerSummary: profile.trackerSummary,
+    savedJobs: profile.savedJobs,
     topSavedJobs: profile.topSavedJobs,
     latestAssessment: profile.assessments[0] || null,
   };

@@ -83,7 +83,7 @@ export default function JobsSearchDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="jobs-glow-panel border-border/70 sm:max-w-2xl">
+      <DialogContent className="jobs-glow-panel border-border/70 sm:max-w-xl">
         <DialogHeader>
           <DialogTitle className="text-2xl gradient-title">
             Find Recommended Jobs
@@ -93,7 +93,7 @@ export default function JobsSearchDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="jobs-glow-inner rounded-[22px] border border-border/70 bg-background/45 p-4">
+        <div className="jobs-glow-inner rounded-[20px] border border-border/70 bg-background/45 p-3.5">
           <p className="text-sm font-medium">
             Your current profile context: {profileSummary.industry || "Career"}
           </p>
@@ -104,7 +104,7 @@ export default function JobsSearchDialog({
           </p>
         </div>
 
-        <form onSubmit={onSubmit} className="space-y-5">
+        <form onSubmit={onSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="query">Desired Role</Label>
             <div className="relative">
@@ -129,7 +129,7 @@ export default function JobsSearchDialog({
                 setValue("provider", nextValue, { shouldValidate: true })
               }
             >
-              <SelectTrigger id="provider" className="h-11">
+              <SelectTrigger id="provider" className="h-10">
                 <div className="flex items-center gap-2">
                   <Layers3 className="h-4 w-4 text-muted-foreground" />
                   <SelectValue placeholder="Choose provider" />
@@ -145,10 +145,10 @@ export default function JobsSearchDialog({
             </Select>
           </div>
 
-          <div className="flex justify-end gap-2">
+          <div className="flex flex-col-reverse justify-end gap-2 sm:flex-row">
             <Button
               type="button"
-              variant="ghost"
+              variant="outline"
               onClick={() => onOpenChange(false)}
             >
               Close

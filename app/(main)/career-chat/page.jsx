@@ -5,13 +5,13 @@ export default async function CareerChatPage({ searchParams }) {
   const data = await getCareerChatPageData(searchParams);
 
   return (
-    <div className="min-h-[calc(100dvh-10rem)] lg:h-full lg:min-h-0 lg:overflow-hidden">
+    <div className="-mb-8 -mt-8 -mx-3 min-h-[calc(100dvh-4rem)] sm:mx-0 sm:mb-0 sm:mt-0 sm:min-h-[calc(100dvh-9rem)] xl:h-full xl:min-h-0 xl:overflow-hidden">
       <ChatbotUI
         initialConversations={data.conversations}
         initialConversation={data.selectedConversation}
         initialMode={data.selectedMode}
         draftContext={data.draftContext}
-        topSavedJobs={data.topSavedJobs}
+        savedJobs={data.savedJobs}
       />
     </div>
   );

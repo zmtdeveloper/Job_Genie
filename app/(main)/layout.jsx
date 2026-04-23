@@ -23,8 +23,8 @@ const MainLayout = async ({ children }) => {
 
   if (accountLoadError) {
     return (
-      <div className="pb-10 pt-28">
-        <div className="container mx-auto px-4 md:px-6">
+      <div className="pb-8 pt-24">
+        <div className="container mx-auto px-3 sm:px-4 md:px-5">
           <Card className="jobs-glow-panel mx-auto max-w-2xl border-border/70">
             <CardHeader>
               <p className="brand-kicker">Account status</p>
@@ -52,8 +52,8 @@ const MainLayout = async ({ children }) => {
   }
 
   return (
-    <div className="pb-10 pt-28">
-      <div className="container mx-auto px-4 md:px-6">{children}</div>
+    <div className="pb-8 pt-24">
+      <div className="container mx-auto px-3 sm:px-4 md:px-5">{children}</div>
     </div>
   );
 };

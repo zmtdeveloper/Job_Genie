@@ -40,7 +40,7 @@ export default function CoverLetterList({ coverLetters }) {
 
   if (!coverLetters?.length) {
     return (
-      <Card className="jobs-glow-panel border-border/70">
+      <Card className="jobs-glow-inner border-border/70 bg-background/70 shadow-none">
         <CardHeader>
           <CardTitle>No Cover Letters Yet</CardTitle>
           <CardDescription>
@@ -52,23 +52,26 @@ export default function CoverLetterList({ coverLetters }) {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {coverLetters.map((letter) => (
         <Card
           key={letter.id}
-          className="jobs-glow-panel group relative border-border/70"
+          className="jobs-glow-inner group relative rounded-[24px] border border-border/70 bg-background/70 shadow-none"
         >
-          <CardHeader>
-            <div className="flex items-start justify-between">
-              <div>
-                <CardTitle className="text-xl gradient-title">
+          <CardHeader className="pb-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div className="min-w-0">
+                <p className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">
+                  Saved Draft
+                </p>
+                <CardTitle className="mt-2 text-lg gradient-title md:text-xl">
                   {letter.jobTitle} at {letter.companyName}
                 </CardTitle>
-                <CardDescription className="mt-2">
+                <CardDescription className="mt-2 text-xs sm:text-sm">
                   Created {format(new Date(letter.createdAt), "PPP")}
                 </CardDescription>
               </div>
-              <div className="flex space-x-2">
+              <div className="flex shrink-0 gap-2">
                 <AlertDialog>
                   <Button
                     variant="outline"
@@ -110,8 +113,8 @@ export default function CoverLetterList({ coverLetters }) {
               </div>
             </div>
           </CardHeader>
-          <CardContent>
-            <div className="line-clamp-3 text-sm leading-7 text-muted-foreground">
+          <CardContent className="pt-0">
+            <div className="line-clamp-3 rounded-[18px] border border-border/60 bg-background/55 p-3 text-sm leading-6 text-muted-foreground">
               {letter.jobDescription}
             </div>
           </CardContent>

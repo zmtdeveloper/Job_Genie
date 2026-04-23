@@ -3,7 +3,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export default function CareerChatLoading() {
   return (
-    <div className="space-y-6 px-4 md:px-1 lg:h-full lg:min-h-0 lg:overflow-hidden">
+    <div className="-mb-8 -mt-8 -mx-3 space-y-0 px-0 sm:mx-0 sm:mb-0 sm:mt-0 sm:space-y-5 sm:px-1 xl:h-full xl:min-h-0 xl:overflow-hidden">
       <Card className="jobs-glow-panel overflow-hidden rounded-[24px] border border-border/70 bg-card/90 text-foreground shadow-none">
         <CardHeader className="space-y-4 pb-4">
           <Skeleton className="h-5 w-52" />
@@ -19,8 +19,8 @@ export default function CareerChatLoading() {
         </CardContent>
       </Card>
 
-      <div className="grid gap-5 xl:grid-cols-[300px_minmax(0,1fr)_320px]">
-        <Card className="jobs-glow-panel min-h-[720px] rounded-[24px] shadow-none">
+      <div className="grid gap-4 xl:grid-cols-[280px_minmax(0,1fr)_300px]">
+        <Card className="jobs-glow-panel min-h-[340px] rounded-[24px] shadow-none xl:min-h-[680px]">
           <CardHeader className="space-y-3">
             <Skeleton className="h-8 w-40" />
             <Skeleton className="h-4 w-full" />
@@ -32,7 +32,7 @@ export default function CareerChatLoading() {
           </CardContent>
         </Card>
 
-        <Card className="jobs-glow-panel min-h-[720px] rounded-[24px] shadow-none">
+        <Card className="jobs-glow-panel min-h-[500px] rounded-[24px] shadow-none xl:min-h-[680px]">
           <CardHeader className="space-y-3">
             <Skeleton className="h-10 w-72" />
             <Skeleton className="h-16 w-full" />
@@ -45,7 +45,7 @@ export default function CareerChatLoading() {
           </CardContent>
         </Card>
 
-        <Card className="jobs-glow-panel min-h-[720px] rounded-[24px] shadow-none">
+        <Card className="jobs-glow-panel hidden rounded-[24px] shadow-none xl:block xl:min-h-[680px]">
           <CardHeader className="space-y-3">
             <Skeleton className="h-8 w-48" />
             <Skeleton className="h-4 w-full" />

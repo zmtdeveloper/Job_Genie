@@ -23,10 +23,10 @@ export default async function CoverLetterPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="brand-page-header px-6 py-7 md:px-8">
-        <div className="relative z-10 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div>
+    <div className="space-y-5">
+      <div className="brand-page-header px-5 py-6 md:px-7 md:py-7">
+        <div className="relative z-10 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-2xl">
             <p className="brand-kicker">Application writing</p>
             <h1 className="mt-3 text-4xl font-semibold md:text-5xl gradient-title">
               My Cover Letters
@@ -37,12 +37,27 @@ export default async function CoverLetterPage() {
             </p>
           </div>
 
-          <Button asChild>
-            <Link href="/ai-cover-letter/new">
-              <Plus className="h-4 w-4 mr-2" />
-              Create New
-            </Link>
-          </Button>
+          <div className="jobs-glow-inner rounded-[22px] border border-border/70 bg-background/55 p-3.5 shadow-none sm:min-w-[250px]">
+            <p className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">
+              Draft Library
+            </p>
+            <div className="mt-2 flex items-end justify-between gap-3">
+              <div>
+                <p className="text-2xl font-semibold text-foreground">
+                  {coverLetters.length}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Saved cover letters
+                </p>
+              </div>
+              <Button asChild className="h-10 rounded-[16px] px-4">
+                <Link href="/ai-cover-letter/new">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Create New
+                </Link>
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
 

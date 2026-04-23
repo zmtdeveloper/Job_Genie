@@ -57,14 +57,14 @@ export default function CoverLetterGenerator({ initialValues }) {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <Card className="jobs-glow-panel border-border/70">
         <CardHeader>
           <CardTitle className="gradient-title text-3xl md:text-4xl">
-            Job Details
+            Role Context
           </CardTitle>
           <CardDescription>
-            Provide information about the position you are applying for
+            Provide the role details and Job Genie will draft a tailored letter.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -104,7 +104,7 @@ export default function CoverLetterGenerator({ initialValues }) {
               <Textarea
                 id="jobDescription"
                 placeholder="Paste the job description here"
-                className="h-32"
+                className="h-32 rounded-[18px]"
                 {...register("jobDescription")}
               />
               {errors.jobDescription && (

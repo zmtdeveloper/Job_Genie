@@ -179,16 +179,16 @@ export default function JobsDetailPanel({
           </div>
 
           <div className="flex flex-wrap gap-3">
-            <div className="jobs-glow-inner min-w-[132px] rounded-2xl border bg-background p-3 shadow-none">
+            <div className="jobs-glow-inner min-w-[118px] rounded-[20px] border bg-background p-2.5 shadow-none">
               <p className="text-xs uppercase tracking-[0.24em] text-muted-foreground">
                 Match Score
               </p>
               <p className="mt-1.5 text-2xl font-semibold">{job.matchScore || 0}</p>
               <p className="text-sm text-muted-foreground">{job.matchLevel}</p>
-              <Progress value={job.matchScore || 0} className="mt-2.5 h-2.5" />
+              <Progress value={job.matchScore || 0} className="mt-2 h-2" />
             </div>
 
-            <div className="jobs-glow-active min-w-[132px] rounded-2xl border border-white/12 bg-background p-3 shadow-none">
+            <div className="jobs-glow-active min-w-[118px] rounded-[20px] border border-white/12 bg-background p-2.5 shadow-none">
               <p className="text-xs uppercase tracking-[0.24em] text-muted-foreground">
                 ATS Score
               </p>
@@ -202,7 +202,7 @@ export default function JobsDetailPanel({
                     ? "Needs detail"
                     : "Resume needed"}
               </p>
-              <Progress value={job.atsScore || 0} className="mt-2.5 h-2.5" />
+              <Progress value={job.atsScore || 0} className="mt-2 h-2" />
             </div>
           </div>
         </div>
@@ -227,8 +227,8 @@ export default function JobsDetailPanel({
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-5 p-5">
-        <div className="grid gap-3 sm:grid-cols-2">
+      <CardContent className="space-y-4 p-4 md:p-5">
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {primaryApplyHref ? (
             <Button asChild className="jobs-glow-button jobs-glow-button-primary h-10">
               <a href={primaryApplyHref} target="_blank" rel="noreferrer noopener">
@@ -271,7 +271,7 @@ export default function JobsDetailPanel({
         </div>
 
         {canLoadDetail ? (
-          <div className="jobs-glow-inner rounded-2xl border border-dashed bg-muted/25 p-4">
+          <div className="jobs-glow-inner rounded-[20px] border border-dashed bg-muted/25 p-3.5">
             <p className="font-medium">Need the full role brief?</p>
             <p className="mt-1.5 text-sm text-muted-foreground">
               Load the detailed listing to pull richer description text, apply link, and stronger ATS keyword signals.
@@ -287,7 +287,7 @@ export default function JobsDetailPanel({
           </div>
         ) : null}
 
-        <Card className="jobs-glow-panel overflow-hidden rounded-[30px] border border-border/70 shadow-none">
+        <Card className="jobs-glow-panel overflow-hidden rounded-[26px] border border-border/70 shadow-none">
           <CardHeader className="border-b border-border/60 bg-muted/20 pb-4">
             <CardTitle className="text-xl gradient-title md:text-2xl">
               Application Tracker
@@ -296,14 +296,14 @@ export default function JobsDetailPanel({
               Keep this role inside your pipeline and update its stage as you move forward.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-5 p-5">
-            <div className="grid gap-4 lg:grid-cols-[240px_minmax(0,1fr)]">
-              <div className="jobs-glow-inner rounded-[24px] border border-border/70 bg-background/70 p-4 shadow-none">
+          <CardContent className="space-y-4 p-4 md:p-5">
+            <div className="grid gap-4 lg:grid-cols-[220px_minmax(0,1fr)]">
+              <div className="jobs-glow-inner rounded-[22px] border border-border/70 bg-background/70 p-3.5 shadow-none">
                 <p className="mb-3 text-xs font-semibold uppercase tracking-[0.22em] text-muted-foreground">
                   Status
                 </p>
                 <Select value={job.status} onValueChange={onStatusChange}>
-                  <SelectTrigger className="jobs-glow-inner h-12 rounded-[18px]">
+                  <SelectTrigger className="jobs-glow-inner h-10 rounded-[16px]">
                     <SelectValue placeholder="Select status" />
                   </SelectTrigger>
                   <SelectContent>
@@ -316,7 +316,7 @@ export default function JobsDetailPanel({
                 </Select>
               </div>
 
-              <div className="jobs-glow-inner rounded-[24px] border border-border/70 bg-background/70 p-4 shadow-none">
+              <div className="jobs-glow-inner rounded-[22px] border border-border/70 bg-background/70 p-3.5 shadow-none">
                 <p className="mb-3 text-xs font-semibold uppercase tracking-[0.22em] text-muted-foreground">
                   Application Notes
                 </p>
@@ -324,12 +324,12 @@ export default function JobsDetailPanel({
                   value={notesDraft}
                   onChange={(event) => onNotesChange(event.target.value)}
                   placeholder="Add interview notes, recruiter updates, or next steps..."
-                  className="jobs-glow-inner min-h-32 rounded-[18px]"
+                  className="jobs-glow-inner min-h-32 rounded-[16px]"
                 />
               </div>
             </div>
 
-            <div className="jobs-glow-inner flex flex-col gap-4 rounded-[24px] border border-border/70 bg-background/70 p-4 shadow-none sm:flex-row sm:items-center sm:justify-between">
+            <div className="jobs-glow-inner flex flex-col gap-4 rounded-[22px] border border-border/70 bg-background/70 p-3.5 shadow-none sm:flex-row sm:items-center sm:justify-between">
               <p className="max-w-2xl text-sm text-muted-foreground">
                 Use <span className="font-medium text-foreground">Archived</span>{" "}
                 to keep a record, or remove the role fully when you no longer need it.
@@ -342,7 +342,7 @@ export default function JobsDetailPanel({
                     variant="outline"
                     onClick={onRemoveSavedJob}
                     disabled={isRemoving}
-                    className="jobs-glow-button jobs-glow-button-danger h-11 border-red-300/30 bg-red-950/80 px-5 font-medium text-red-50 hover:bg-red-950/90 hover:text-white"
+                    className="jobs-glow-button jobs-glow-button-danger h-10 border-red-300/30 bg-red-950/80 px-4 font-medium text-red-50 hover:bg-red-950/90 hover:text-white"
                   >
                     <Trash2 className="h-4 w-4" />
                     {isRemoving ? "Removing..." : "Remove From Tracker"}
@@ -352,7 +352,7 @@ export default function JobsDetailPanel({
                 <Button
                   onClick={onSaveNotes}
                   disabled={isUpdating}
-                  className="jobs-glow-button jobs-glow-active h-11 px-5 font-semibold"
+                  className="jobs-glow-button jobs-glow-active h-10 px-4 font-semibold"
                 >
                   <NotebookPen className="h-4 w-4" />
                   Save Tracker Notes
@@ -379,7 +379,7 @@ export default function JobsDetailPanel({
               </div>
             ) : job.resumeAvailable ? (
               <>
-                <div className="jobs-glow-inner rounded-2xl border bg-muted/40 p-4">
+                <div className="jobs-glow-inner rounded-[20px] border bg-muted/40 p-3.5">
                   <div className="flex items-center justify-between gap-4">
                     <div>
                       <p className="text-xs uppercase tracking-[0.24em] text-muted-foreground">
@@ -400,7 +400,7 @@ export default function JobsDetailPanel({
                 </div>
 
                 <div className="grid gap-3 md:grid-cols-2">
-                  <div className="jobs-glow-inner rounded-2xl border bg-background p-4">
+                  <div className="jobs-glow-inner rounded-[20px] border bg-background p-3.5">
                     <p className="mb-3 text-sm font-medium">Already matched</p>
                     <div className="flex flex-wrap gap-2">
                       {job.atsMatchedKeywords?.length ? (
@@ -417,7 +417,7 @@ export default function JobsDetailPanel({
                     </div>
                   </div>
 
-                  <div className="jobs-glow-inner rounded-2xl border bg-background p-4">
+                  <div className="jobs-glow-inner rounded-[20px] border bg-background p-3.5">
                     <p className="mb-3 text-sm font-medium">Worth adding</p>
                     <div className="flex flex-wrap gap-2">
                       {job.atsMissingKeywords?.length ? (
@@ -436,7 +436,7 @@ export default function JobsDetailPanel({
                 </div>
               </>
             ) : (
-              <div className="jobs-glow-inner rounded-2xl border border-dashed bg-muted/30 p-5">
+              <div className="jobs-glow-inner rounded-[20px] border border-dashed bg-muted/30 p-4">
                 <p className="font-medium">Resume needed for ATS analysis</p>
                 <p className="mt-2 text-sm text-muted-foreground">
                   Build or save your resume first, then this panel will score the match automatically.

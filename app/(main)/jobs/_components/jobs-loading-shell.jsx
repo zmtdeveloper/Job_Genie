@@ -3,7 +3,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export default function JobsLoadingShell() {
   return (
-    <div className="space-y-6 px-4 md:px-1">
+    <div className="space-y-5 px-3 sm:px-1">
       <Card className="jobs-glow-panel overflow-hidden border-0 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 text-white shadow-none">
         <CardHeader className="space-y-4 pb-4">
           <Skeleton className="h-5 w-40 bg-white/15" />
@@ -19,25 +19,25 @@ export default function JobsLoadingShell() {
         </CardContent>
       </Card>
 
-      <Card className="jobs-glow-panel sticky top-20 z-20 border shadow-none">
-        <CardContent className="grid items-end gap-3 p-4 md:grid-cols-[1.5fr_1fr_1fr_auto]">
+      <Card className="jobs-glow-panel border shadow-none">
+        <CardContent className="grid items-end gap-3 p-3.5 sm:grid-cols-2 xl:grid-cols-[1.5fr_1fr_1fr_auto]">
           <div className="space-y-3">
             <Skeleton className="h-4 w-32" />
             <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_152px]">
-              <Skeleton className="h-12 rounded-[20px]" />
-              <Skeleton className="h-12 rounded-[20px]" />
+              <Skeleton className="h-10 rounded-[16px]" />
+              <Skeleton className="h-10 rounded-[16px]" />
             </div>
           </div>
-          <Skeleton className="h-11" />
-          <Skeleton className="h-11" />
+          <Skeleton className="h-10" />
+          <Skeleton className="h-10" />
           <div className="flex gap-2 md:justify-end">
-            <Skeleton className="h-12 w-24 rounded-[18px]" />
+            <Skeleton className="h-10 w-24 rounded-[16px]" />
           </div>
         </CardContent>
       </Card>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(360px,0.9fr)]">
-        <Card className="jobs-glow-panel min-h-[680px] shadow-none">
+        <Card className="jobs-glow-panel min-h-[620px] shadow-none">
           <CardHeader className="space-y-3">
             <Skeleton className="h-10 w-80" />
             <Skeleton className="h-4 w-48" />
@@ -46,7 +46,7 @@ export default function JobsLoadingShell() {
             {Array.from({ length: 4 }).map((_, index) => (
               <div
                 key={index}
-                className="jobs-glow-inner rounded-2xl border border-border/60 p-4 shadow-none"
+                className="jobs-glow-inner rounded-2xl border border-border/60 p-3.5 shadow-none"
               >
                 <div className="space-y-3">
                   <Skeleton className="h-6 w-52" />
@@ -64,7 +64,7 @@ export default function JobsLoadingShell() {
           </CardContent>
         </Card>
 
-        <Card className="jobs-glow-panel min-h-[680px] shadow-none">
+        <Card className="jobs-glow-panel min-h-[620px] shadow-none">
           <CardHeader className="space-y-4">
             <Skeleton className="h-10 w-52" />
             <Skeleton className="h-6 w-full" />
