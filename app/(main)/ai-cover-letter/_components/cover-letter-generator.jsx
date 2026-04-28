@@ -51,7 +51,6 @@ export default function CoverLetterGenerator({ initialValues }) {
     if (generatedLetter?.id) {
       toast.success("Cover letter generated successfully!");
       router.push(`/ai-cover-letter/${generatedLetter.id}`);
-      router.refresh();
       reset(initialValues);
     }
   };

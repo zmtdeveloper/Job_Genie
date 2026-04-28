@@ -2,6 +2,7 @@
 
 import { db } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
+import { revalidatePath } from "next/cache";
 import { generateText } from "@/lib/gemini";
 
 const COVER_LETTER_MODEL =
@@ -194,10 +195,14 @@ export async function generateCoverLetter(data) {
       })
     );
 
+    revalidatePath("/ai-cover-letter");
+    revalidatePath(`/ai-cover-letter/${coverLetter.id}`);
+
     return {
       id: coverLetter.id,
       companyName: coverLetter.companyName,
       jobTitle: coverLetter.jobTitle,
+      content: coverLetter.content,
     };
   } catch (error) {
     console.error("Error generating cover letter:", {
@@ -303,6 +308,9 @@ export async function deleteCoverLetter(id) {
   if (result.count === 0) {
     throw new Error("Cover letter not found");
   }
+
+  revalidatePath("/ai-cover-letter");
+  revalidatePath(`/ai-cover-letter/${id}`);
 
   return result;
 }

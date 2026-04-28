@@ -1,5 +1,4 @@
 import { auth } from "@clerk/nextjs/server";
-import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -24,9 +23,6 @@ const footerCtaButtonClass =
 
 export default async function LandingPage({ searchParams }) {
   const { userId } = await auth();
-  if (userId) {
-    redirect("/dashboard");
-  }
 
   const resolvedSearchParams = await Promise.resolve(searchParams);
   const showAuthNotice = resolvedSearchParams?.auth === "required";

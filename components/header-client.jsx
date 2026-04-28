@@ -116,7 +116,6 @@ function isActivePath(pathname, href) {
 
 export default function HeaderClient({ isSignedIn }) {
   const pathname = usePathname();
-  const homeHref = isSignedIn ? "/dashboard" : "/";
   const growthToolsActive = growthTools.some((item) =>
     isActivePath(pathname, item.href)
   );
@@ -125,7 +124,7 @@ export default function HeaderClient({ isSignedIn }) {
     <header className="fixed top-0 z-50 w-full border-b border-white/8 bg-[#07111d]/84 shadow-[0_16px_40px_-34px_rgba(2,6,23,0.96)] backdrop-blur-2xl supports-[backdrop-filter]:bg-[#07111d]/70">
       <nav className="container mx-auto flex h-[64px] items-center justify-between gap-2 px-3 sm:h-[70px] sm:gap-3 sm:px-4 md:px-6">
         <Link
-          href={homeHref}
+          href="/"
           className={headerLogoShellClass}
         >
           <div className="relative flex h-10 w-10 items-center justify-center rounded-[18px] border border-white/14 bg-[linear-gradient(180deg,rgba(255,255,255,0.3),rgba(186,230,253,0.16)_34%,rgba(56,189,248,0.05)_100%),linear-gradient(135deg,rgba(103,232,249,0.88),rgba(56,189,248,0.92)_42%,rgba(37,99,235,0.96))] shadow-[inset_0_1px_0_rgba(255,255,255,0.42),0_22px_32px_-24px_rgba(37,99,235,0.88)] sm:h-11 sm:w-11">
